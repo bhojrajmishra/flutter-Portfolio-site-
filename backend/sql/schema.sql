@@ -101,15 +101,6 @@ CREATE TABLE IF NOT EXISTS contact_messages (
   is_read TINYINT(1) NOT NULL DEFAULT 0
 );
 
--- Singleton row (id always 1). Drives the desktop's live weather widget.
-CREATE TABLE IF NOT EXISTS site_settings (
-  id INT PRIMARY KEY,
-  weather_city VARCHAR(255) NOT NULL DEFAULT 'Dharan',
-  -- DOUBLE (not DECIMAL) so mysql2 returns a plain JS number, not a string.
-  weather_lat DOUBLE NOT NULL DEFAULT 26.812100,
-  weather_lon DOUBLE NOT NULL DEFAULT 87.283902
-);
-
 CREATE TABLE IF NOT EXISTS blog_posts (
   id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,

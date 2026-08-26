@@ -10,7 +10,6 @@ import '../models/experience.dart';
 import '../models/hero_content.dart';
 import '../models/project.dart';
 import '../models/resume_file.dart';
-import '../models/site_settings.dart';
 import '../models/skill.dart';
 import '../models/social_link.dart';
 import 'auth_controller.dart';
@@ -131,15 +130,6 @@ class PortfolioRepository {
 
   Future<void> markContactMessageRead(int id) => _dio.put('/contact/$id/read');
   Future<void> deleteContactMessage(int id) => _dio.delete('/contact/$id');
-
-  // ---- Site settings (weather location) ----
-  Future<SiteSettings> getSettings() async {
-    final res = await _dio.get('/settings');
-    return SiteSettings.fromJson(res.data as Map<String, dynamic>);
-  }
-
-  Future<void> updateSettings(SiteSettings settings) =>
-      _dio.put('/settings', data: settings.toJson());
 
   // ---- Blog ----
   Future<List<BlogPost>> getBlogPosts() async {

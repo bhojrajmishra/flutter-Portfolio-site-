@@ -9,10 +9,10 @@ import '../models/experience.dart';
 import '../models/hero_content.dart';
 import '../models/project.dart';
 import '../models/resume_file.dart';
-import '../models/site_settings.dart';
 import '../models/skill.dart';
 import '../models/social_link.dart';
 import '../models/weather.dart';
+import 'geolocation_repository.dart';
 import 'portfolio_repository.dart';
 import 'weather_repository.dart';
 
@@ -56,10 +56,6 @@ final contactMessagesProvider = FutureProvider<List<ContactMessage>>((ref) {
   return ref.watch(portfolioRepositoryProvider).getContactMessages();
 });
 
-final settingsProvider = FutureProvider<SiteSettings>((ref) {
-  return ref.watch(portfolioRepositoryProvider).getSettings();
-});
-
 final blogPostsProvider = FutureProvider<List<BlogPost>>((ref) {
   return ref.watch(portfolioRepositoryProvider).getBlogPosts();
 });
@@ -68,16 +64,18 @@ final apkProvider = FutureProvider<ApkFile?>((ref) {
   return ref.watch(portfolioRepositoryProvider).getApk();
 });
 
+final geolocationRepositoryProvider = Provider<GeolocationRepository>((ref) => GeolocationRepository());
 final weatherRepositoryProvider = Provider<WeatherRepository>((ref) => WeatherRepository());
 
-/// Live weather for the admin-configured location. Chained off
-/// [settingsProvider]; UI should treat a failure here as non-fatal (show
-/// "weather unavailable") since it's a decorative feature.
+/// Live weather for the visitor's actual browser/device location (not an
+/// admin-configured one). UI should treat a failure here as non-fatal (show
+/// "weather unavailable" / a location-permission hint) since it's a
+/// decorative feature, not core content.
 final weatherProvider = FutureProvider<Weather>((ref) async {
-  final settings = await ref.watch(settingsProvider.future);
+  final position = await ref.watch(geolocationRepositoryProvider).getCurrentPosition();
   return ref.watch(weatherRepositoryProvider).getCurrentWeather(
-        lat: settings.weatherLat,
-        lon: settings.weatherLon,
+        lat: position.latitude,
+        lon: position.longitude,
       );
 });
 
@@ -91,7 +89,6 @@ void invalidateAllContent(WidgetRef ref) {
   ref.invalidate(educationProvider);
   ref.invalidate(socialLinksProvider);
   ref.invalidate(resumeProvider);
-  ref.invalidate(settingsProvider);
   ref.invalidate(blogPostsProvider);
   ref.invalidate(apkProvider);
 }
