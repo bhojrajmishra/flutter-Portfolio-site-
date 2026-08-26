@@ -1,8 +1,13 @@
 # Deploying to your VPS + custom domain
 
-This walks through putting the site live on your own domain, on the VPS
-you already have. Do this once for initial setup; after that, `./deploy/deploy.sh`
-handles routine updates.
+This walks through putting the site live on your own domain, on a **VPS
+you fully control** (root/sudo, your own Nginx/PM2). Do this once for
+initial setup; after that, `./deploy/deploy.sh` handles routine updates.
+
+**On shared/PaaS hosting instead (e.g. alwaysdata), see
+[`ALWAYSDATA.md`](ALWAYSDATA.md)** — same app and database, but sites,
+databases, domains and SSL are provisioned through a web admin panel
+rather than files you edit yourself.
 
 ## 0. What you'll need
 
@@ -61,7 +66,13 @@ sudo mkdir -p /var/www/portfolio/frontend /var/www/portfolio/backend
 sudo chown -R $USER:$USER /var/www/portfolio
 ```
 
-## 4. Configure the backend
+## 4. Apply the database schema
+
+```bash
+mysql -u portfolio -p portfolio < backend/sql/schema.sql
+```
+
+## 5. Configure the backend
 
 Copy `backend/.env.example` to `/var/www/portfolio/backend/.env` on the server
 and fill in real values:
@@ -77,7 +88,7 @@ CORS_ORIGINS="https://yourdomain.com,https://www.yourdomain.com"
 PUBLIC_BASE_URL="https://yourdomain.com"
 ```
 
-## 5. Nginx site
+## 6. Nginx site
 
 ```bash
 sudo cp deploy/nginx.conf /etc/nginx/sites-available/portfolio
@@ -87,7 +98,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-## 6. First deploy
+## 7. First deploy
 
 From your local machine, edit `deploy/deploy.sh` — set `VPS_USER`, `VPS_HOST`,
 `VPS_APP_DIR` — then run it:
@@ -100,17 +111,19 @@ This builds the Flutter web release, syncs both frontend and backend to the
 server, installs backend deps, and starts the API under PM2 (first run) or
 reloads it (subsequent runs).
 
-On the server, seed the admin user and placeholder content once:
+On the server, seed the admin user and placeholder content once. Use the
+compiled script directly (`npm run seed` invokes `ts-node`, a devDependency
+not installed by `npm ci --omit=dev`):
 
 ```bash
 ssh youruser@your.server.ip
 cd /var/www/portfolio/backend
-npm run seed
+node dist/src/scripts/seed.js
 pm2 save        # persist the process list across reboots
 pm2 startup      # follow the printed instructions to enable PM2 on boot
 ```
 
-## 7. HTTPS
+## 8. HTTPS
 
 ```bash
 sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
@@ -119,13 +132,13 @@ sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
 Certbot edits `/etc/nginx/sites-available/portfolio` in place to add the TLS
 server block and redirect HTTP -> HTTPS, and sets up auto-renewal.
 
-## 8. Verify
+## 9. Verify
 
 - `https://yourdomain.com` loads the public site with a valid padlock.
 - `https://yourdomain.com/admin/login` — sign in with `ADMIN_EMAIL` /
   `ADMIN_PASSWORD` from `.env`, then **change the password by re-seeding
-  with a new `ADMIN_PASSWORD` and re-running `npm run seed`** (upserts the
-  existing admin's password hash).
+  with a new `ADMIN_PASSWORD` and re-running `node dist/src/scripts/seed.js`**
+  (upserts the existing admin's password hash).
 - Edit some content in the admin panel and confirm it appears on the public
   page.
 - Submit the public contact form and confirm the message shows up in
@@ -140,5 +153,7 @@ After the first deploy, ship changes with:
 ```
 
 It rebuilds the Flutter web release, re-syncs both frontend and backend,
-applies any new Prisma migrations, and reloads the API — your data (MySQL,
-uploaded files) is untouched.
+and reloads the API — your data (MySQL, uploaded files) is untouched. If a
+change added new tables/columns, apply the updated `sql/schema.sql`
+manually first (it uses `CREATE TABLE IF NOT EXISTS`, so it's safe to
+re-run against an existing database).

@@ -2,21 +2,14 @@
   "name": "portfolio-backend",
   "version": "1.0.0",
   "description": "API + admin backend for the Flutter portfolio site",
-  "main": "dist/server.js",
+  "main": "dist/src/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:deploy": "prisma migrate deploy",
-    "seed": "ts-node prisma/seed.ts"
-  },
-  "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "start": "node dist/src/server.js",
+    "seed": "ts-node src/scripts/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.20.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -25,7 +18,7 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
-    "prisma": "^5.20.0",
+    "mysql2": "^3.11.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {

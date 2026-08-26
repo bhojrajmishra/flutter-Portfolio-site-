@@ -1,20 +1,37 @@
 import { Router } from "express";
+import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { z } from "zod";
-import { prisma } from "../lib/prisma";
+import { pool } from "../lib/db";
 import { requireAuth } from "../middleware/auth";
 import { asyncHandler } from "../middleware/errorHandler";
 
 const router = Router();
 
-function serialize(project: { techTags: string; [k: string]: unknown }) {
-  return { ...project, techTags: JSON.parse(project.techTags || "[]") };
+interface ProjectRow extends RowDataPacket {
+  id: number;
+  title: string;
+  description: string;
+  imageUrl: string | null;
+  techTags: string;
+  liveUrl: string | null;
+  repoUrl: string | null;
+  featured: number;
+  sortOrder: number;
+  createdAt: Date;
+}
+
+const SELECT_COLUMNS = `id, title, description, image_url AS imageUrl, tech_tags AS techTags,
+  live_url AS liveUrl, repo_url AS repoUrl, featured, sort_order AS sortOrder, created_at AS createdAt`;
+
+function serialize(row: ProjectRow) {
+  return { ...row, techTags: JSON.parse(row.techTags || "[]"), featured: Boolean(row.featured) };
 }
 
 router.get(
   "/",
   asyncHandler(async (_req, res) => {
-    const projects = await prisma.project.findMany({ orderBy: { sortOrder: "asc" } });
-    res.json(projects.map(serialize));
+    const [rows] = await pool.query<ProjectRow[]>(`SELECT ${SELECT_COLUMNS} FROM projects ORDER BY sort_order ASC`);
+    res.json(rows.map(serialize));
   })
 );
 
@@ -33,11 +50,25 @@ router.post(
   "/",
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { techTags, ...data } = projectSchema.parse(req.body);
-    const project = await prisma.project.create({
-      data: { ...data, techTags: JSON.stringify(techTags) },
-    });
-    res.status(201).json(serialize(project));
+    const data = projectSchema.parse(req.body);
+    const [result] = await pool.query<ResultSetHeader>(
+      `INSERT INTO projects (title, description, image_url, tech_tags, live_url, repo_url, featured, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        data.title,
+        data.description,
+        data.imageUrl ?? null,
+        JSON.stringify(data.techTags),
+        data.liveUrl ?? null,
+        data.repoUrl ?? null,
+        data.featured ? 1 : 0,
+        data.sortOrder,
+      ]
+    );
+    const [rows] = await pool.query<ProjectRow[]>(`SELECT ${SELECT_COLUMNS} FROM projects WHERE id = ?`, [
+      result.insertId,
+    ]);
+    res.status(201).json(serialize(rows[0]));
   })
 );
 
@@ -46,12 +77,27 @@ router.put(
   requireAuth,
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const { techTags, ...data } = projectSchema.partial().parse(req.body);
-    const project = await prisma.project.update({
-      where: { id },
-      data: { ...data, ...(techTags !== undefined ? { techTags: JSON.stringify(techTags) } : {}) },
-    });
-    res.json(serialize(project));
+    const data = projectSchema.partial().parse(req.body);
+
+    const columnMap: Record<string, [string, unknown]> = {};
+    if (data.title !== undefined) columnMap.title = ["title = ?", data.title];
+    if (data.description !== undefined) columnMap.description = ["description = ?", data.description];
+    if (data.imageUrl !== undefined) columnMap.imageUrl = ["image_url = ?", data.imageUrl];
+    if (data.techTags !== undefined) columnMap.techTags = ["tech_tags = ?", JSON.stringify(data.techTags)];
+    if (data.liveUrl !== undefined) columnMap.liveUrl = ["live_url = ?", data.liveUrl];
+    if (data.repoUrl !== undefined) columnMap.repoUrl = ["repo_url = ?", data.repoUrl];
+    if (data.featured !== undefined) columnMap.featured = ["featured = ?", data.featured ? 1 : 0];
+    if (data.sortOrder !== undefined) columnMap.sortOrder = ["sort_order = ?", data.sortOrder];
+
+    const entries = Object.values(columnMap);
+    if (entries.length > 0) {
+      const setClause = entries.map(([clause]) => clause).join(", ");
+      const values = entries.map(([, value]) => value);
+      await pool.query(`UPDATE projects SET ${setClause} WHERE id = ?`, [...values, id]);
+    }
+
+    const [rows] = await pool.query<ProjectRow[]>(`SELECT ${SELECT_COLUMNS} FROM projects WHERE id = ?`, [id]);
+    res.json(serialize(rows[0]));
   })
 );
 
@@ -60,7 +106,7 @@ router.delete(
   requireAuth,
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    await prisma.project.delete({ where: { id } });
+    await pool.query("DELETE FROM projects WHERE id = ?", [id]);
     res.status(204).send();
   })
 );

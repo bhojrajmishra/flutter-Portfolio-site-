@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
-# Deploys the portfolio to the VPS: builds the Flutter web release locally,
-# syncs both frontend build and backend source to the server, installs
-# backend deps, applies pending Prisma migrations, and restarts the API
-# under PM2. Run from the repo root: ./deploy/deploy.sh
+# Deploys the portfolio to a traditional VPS (root/sudo access, PM2, Nginx
+# you control): builds the Flutter web release locally, syncs both frontend
+# build and backend source to the server, installs backend deps, and
+# restarts the API under PM2. Run from the repo root: ./deploy/deploy.sh
+#
+# NOTE: this script targets a plain VPS. If you're deploying to shared/PaaS
+# hosting (e.g. alwaysdata) where you don't control Nginx/PM2 directly, see
+# deploy/ALWAYSDATA.md instead — the app/database code is identical, only
+# the hosting mechanics differ.
 #
 # Requires: an SSH key already authorized on the VPS, and the variables
-# below filled in for your setup.
+# below filled in for your setup. The database schema (sql/schema.sql) must
+# already be applied once — see DEPLOY.md step 2.
 
 set -euo pipefail
 
@@ -32,14 +38,12 @@ rsync -az --delete \
   --exclude 'uploads' \
   backend/ "$VPS_USER@$VPS_HOST:$VPS_APP_DIR/backend/"
 
-echo "==> Installing backend deps, applying migrations, restarting API"
+echo "==> Installing backend deps, restarting API"
 # shellcheck disable=SC2087
 ssh "$VPS_USER@$VPS_HOST" bash -s <<EOF
   set -euo pipefail
   cd "$VPS_APP_DIR/backend"
   npm ci --omit=dev
-  npx prisma migrate deploy
-  npx prisma generate
   pm2 startOrReload "$VPS_APP_DIR/deploy/ecosystem.config.js" || pm2 restart portfolio-api
 EOF
 

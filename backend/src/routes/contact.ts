@@ -1,7 +1,8 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
+import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { z } from "zod";
-import { prisma } from "../lib/prisma";
+import { pool } from "../lib/db";
 import { requireAuth } from "../middleware/auth";
 import { asyncHandler } from "../middleware/errorHandler";
 
@@ -22,13 +23,25 @@ const contactSchema = z.object({
   message: z.string().min(1).max(5000),
 });
 
+interface ContactRow extends RowDataPacket {
+  id: number;
+  name: string;
+  email: string;
+  message: string;
+  createdAt: Date;
+  isRead: number;
+}
+
 router.post(
   "/",
   submitLimiter,
   asyncHandler(async (req, res) => {
     const data = contactSchema.parse(req.body);
-    const entry = await prisma.contactMessage.create({ data });
-    res.status(201).json({ id: entry.id });
+    const [result] = await pool.query<ResultSetHeader>(
+      "INSERT INTO contact_messages (name, email, message) VALUES (?, ?, ?)",
+      [data.name, data.email, data.message]
+    );
+    res.status(201).json({ id: result.insertId });
   })
 );
 
@@ -37,8 +50,10 @@ router.get(
   "/",
   requireAuth,
   asyncHandler(async (_req, res) => {
-    const messages = await prisma.contactMessage.findMany({ orderBy: { createdAt: "desc" } });
-    res.json(messages);
+    const [rows] = await pool.query<ContactRow[]>(
+      "SELECT id, name, email, message, created_at AS createdAt, is_read AS isRead FROM contact_messages ORDER BY created_at DESC"
+    );
+    res.json(rows.map((r) => ({ ...r, isRead: Boolean(r.isRead) })));
   })
 );
 
@@ -47,8 +62,13 @@ router.put(
   requireAuth,
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const message = await prisma.contactMessage.update({ where: { id }, data: { isRead: true } });
-    res.json(message);
+    await pool.query("UPDATE contact_messages SET is_read = 1 WHERE id = ?", [id]);
+    const [rows] = await pool.query<ContactRow[]>(
+      "SELECT id, name, email, message, created_at AS createdAt, is_read AS isRead FROM contact_messages WHERE id = ?",
+      [id]
+    );
+    const row = rows[0];
+    res.json(row ? { ...row, isRead: Boolean(row.isRead) } : null);
   })
 );
 
@@ -57,7 +77,7 @@ router.delete(
   requireAuth,
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    await prisma.contactMessage.delete({ where: { id } });
+    await pool.query("DELETE FROM contact_messages WHERE id = ?", [id]);
     res.status(204).send();
   })
 );

@@ -1,16 +1,26 @@
 import { Router } from "express";
+import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { z } from "zod";
-import { prisma } from "../lib/prisma";
+import { pool } from "../lib/db";
 import { requireAuth } from "../middleware/auth";
 import { asyncHandler } from "../middleware/errorHandler";
 
 const router = Router();
 
+interface SkillRow extends RowDataPacket {
+  id: number;
+  name: string;
+  category: string;
+  sortOrder: number;
+}
+
 router.get(
   "/",
   asyncHandler(async (_req, res) => {
-    const skills = await prisma.skill.findMany({ orderBy: { sortOrder: "asc" } });
-    res.json(skills);
+    const [rows] = await pool.query<SkillRow[]>(
+      "SELECT id, name, category, sort_order AS sortOrder FROM skills ORDER BY sort_order ASC"
+    );
+    res.json(rows);
   })
 );
 
@@ -25,8 +35,11 @@ router.post(
   requireAuth,
   asyncHandler(async (req, res) => {
     const data = skillSchema.parse(req.body);
-    const skill = await prisma.skill.create({ data });
-    res.status(201).json(skill);
+    const [result] = await pool.query<ResultSetHeader>(
+      "INSERT INTO skills (name, category, sort_order) VALUES (?, ?, ?)",
+      [data.name, data.category, data.sortOrder]
+    );
+    res.status(201).json({ id: result.insertId, ...data });
   })
 );
 
@@ -36,8 +49,19 @@ router.put(
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const data = skillSchema.partial().parse(req.body);
-    const skill = await prisma.skill.update({ where: { id }, data });
-    res.json(skill);
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    if (data.name !== undefined) { fields.push("name = ?"); values.push(data.name); }
+    if (data.category !== undefined) { fields.push("category = ?"); values.push(data.category); }
+    if (data.sortOrder !== undefined) { fields.push("sort_order = ?"); values.push(data.sortOrder); }
+    if (fields.length > 0) {
+      await pool.query(`UPDATE skills SET ${fields.join(", ")} WHERE id = ?`, [...values, id]);
+    }
+    const [rows] = await pool.query<SkillRow[]>(
+      "SELECT id, name, category, sort_order AS sortOrder FROM skills WHERE id = ?",
+      [id]
+    );
+    res.json(rows[0]);
   })
 );
 
@@ -46,7 +70,7 @@ router.delete(
   requireAuth,
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    await prisma.skill.delete({ where: { id } });
+    await pool.query("DELETE FROM skills WHERE id = ?", [id]);
     res.status(204).send();
   })
 );

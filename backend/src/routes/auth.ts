@@ -2,9 +2,10 @@ import bcrypt from "bcryptjs";
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import jwt from "jsonwebtoken";
+import { RowDataPacket } from "mysql2";
 import { z } from "zod";
 import { env } from "../lib/env";
-import { prisma } from "../lib/prisma";
+import { pool } from "../lib/db";
 import { asyncHandler } from "../middleware/errorHandler";
 
 const router = Router();
@@ -23,18 +24,27 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+interface AdminRow extends RowDataPacket {
+  id: number;
+  email: string;
+  password_hash: string;
+}
+
 router.post(
   "/login",
   loginLimiter,
   asyncHandler(async (req, res) => {
     const { email, password } = loginSchema.parse(req.body);
 
-    const admin = await prisma.adminUser.findUnique({ where: { email } });
+    const [rows] = await pool.query<AdminRow[]>("SELECT id, email, password_hash FROM admin_users WHERE email = ?", [
+      email,
+    ]);
+    const admin = rows[0];
     if (!admin) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    const valid = await bcrypt.compare(password, admin.passwordHash);
+    const valid = await bcrypt.compare(password, admin.password_hash);
     if (!valid) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
