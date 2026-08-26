@@ -79,7 +79,7 @@ class WindowFrame extends ConsumerWidget {
   }
 }
 
-class _TitleBar extends StatelessWidget {
+class _TitleBar extends StatefulWidget {
   final DesktopWindow window;
   final WindowManagerNotifier notifier;
   final Size desktopSize;
@@ -87,11 +87,24 @@ class _TitleBar extends StatelessWidget {
   const _TitleBar({required this.window, required this.notifier, required this.desktopSize});
 
   @override
+  State<_TitleBar> createState() => _TitleBarState();
+}
+
+class _TitleBarState extends State<_TitleBar> {
+  // Real macOS behavior: hovering anywhere over the traffic-light cluster
+  // reveals the ×/−/+ glyphs in all three at once, not just the one under
+  // the cursor.
+  bool _hoveringLights = false;
+
+  @override
   Widget build(BuildContext context) {
+    final window = widget.window;
+    final notifier = widget.notifier;
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onPanUpdate: (details) => notifier.moveWindow(window.id, window.position + details.delta, desktopSize),
-      onDoubleTap: () => notifier.toggleMaximize(window.id, desktopSize),
+      onPanUpdate: (details) => notifier.moveWindow(window.id, window.position + details.delta, widget.desktopSize),
+      onDoubleTap: () => notifier.toggleMaximize(window.id, widget.desktopSize),
       child: Container(
         height: 40,
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -101,13 +114,34 @@ class _TitleBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _TrafficLight(color: const Color(0xFFFF5F57), onTap: () => notifier.closeWindow(window.id)),
-            const SizedBox(width: 8),
-            _TrafficLight(color: const Color(0xFFFEBC2E), onTap: () => notifier.minimizeWindow(window.id)),
-            const SizedBox(width: 8),
-            _TrafficLight(
-              color: const Color(0xFF28C840),
-              onTap: () => notifier.toggleMaximize(window.id, desktopSize),
+            MouseRegion(
+              onEnter: (_) => setState(() => _hoveringLights = true),
+              onExit: (_) => setState(() => _hoveringLights = false),
+              child: Row(
+                children: [
+                  _TrafficLight(
+                    color: const Color(0xFFFF5F57),
+                    icon: Icons.close,
+                    showIcon: _hoveringLights,
+                    onTap: () => notifier.closeWindow(window.id),
+                  ),
+                  const SizedBox(width: 8),
+                  _TrafficLight(
+                    color: const Color(0xFFFEBC2E),
+                    icon: Icons.remove,
+                    showIcon: _hoveringLights,
+                    onTap: () => notifier.minimizeWindow(window.id),
+                  ),
+                  const SizedBox(width: 8),
+                  _TrafficLight(
+                    color: const Color(0xFF28C840),
+                    icon: window.isMaximized ? Icons.close_fullscreen : Icons.open_in_full,
+                    iconSize: 6,
+                    showIcon: _hoveringLights,
+                    onTap: () => notifier.toggleMaximize(window.id, widget.desktopSize),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(width: 12),
             Icon(window.icon, size: 15, color: AppColors.textSecondary),
@@ -128,42 +162,79 @@ class _TitleBar extends StatelessWidget {
 
 class _TrafficLight extends StatelessWidget {
   final Color color;
+  final IconData icon;
+  final bool showIcon;
   final VoidCallback onTap;
-  const _TrafficLight({required this.color, required this.onTap});
+  final double iconSize;
+
+  const _TrafficLight({
+    required this.color,
+    required this.icon,
+    required this.showIcon,
+    required this.onTap,
+    this.iconSize = 8,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 12,
-        height: 12,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: showIcon ? Border.all(color: Colors.black.withValues(alpha: 0.15)) : null,
+          ),
+          alignment: Alignment.center,
+          child: showIcon ? Icon(icon, size: iconSize, color: const Color(0xFF4D2600)) : null,
+        ),
       ),
     );
   }
 }
 
-class _ResizeHandle extends StatelessWidget {
+class _ResizeHandle extends StatefulWidget {
   final DesktopWindow window;
   final WindowManagerNotifier notifier;
   const _ResizeHandle({required this.window, required this.notifier});
 
   @override
+  State<_ResizeHandle> createState() => _ResizeHandleState();
+}
+
+class _ResizeHandleState extends State<_ResizeHandle> {
+  bool _hovering = false;
+
+  @override
   Widget build(BuildContext context) {
     return MouseRegion(
       cursor: SystemMouseCursors.resizeUpLeftDownRight,
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
       child: GestureDetector(
-        onPanUpdate: (details) => notifier.resizeWindow(
-          window.id,
-          window.size + Offset(details.delta.dx, details.delta.dy),
+        onPanUpdate: (details) => widget.notifier.resizeWindow(
+          widget.window.id,
+          widget.window.size + Offset(details.delta.dx, details.delta.dy),
         ),
         child: Container(
           width: 20,
           height: 20,
           alignment: Alignment.bottomRight,
           padding: const EdgeInsets.all(4),
-          child: const Icon(Icons.drag_indicator, size: 14, color: AppColors.textSecondary),
+          child: AnimatedScale(
+            duration: const Duration(milliseconds: 100),
+            scale: _hovering ? 1.3 : 1.0,
+            child: Icon(
+              Icons.drag_indicator,
+              size: 14,
+              color: _hovering ? AppColors.accentEnd : AppColors.textSecondary,
+            ),
+          ),
         ),
       ),
     );

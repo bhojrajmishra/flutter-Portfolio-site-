@@ -25,7 +25,6 @@ const _navItems = [
   _NavItem('Messages', Icons.mail_outline, '/admin/contact'),
   _NavItem('Blog', Icons.travel_explore_outlined, '/admin/blog'),
   _NavItem('Android App', Icons.android, '/admin/apk'),
-  _NavItem('Settings', Icons.settings_outlined, '/admin/settings'),
 ];
 
 /// Sidebar + content shell wrapping every /admin/* route once logged in.

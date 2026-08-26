@@ -4,15 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/data_providers.dart';
 import '../../../core/theme/app_theme.dart';
 
-/// Floating "widget" card showing real live weather for the admin-configured
-/// city. Decorative/non-critical — failures show a small unobtrusive message
-/// rather than an error state.
+/// Floating "widget" card showing real live weather for the visitor's own
+/// location (browser geolocation, not an admin-configured city).
+/// Decorative/non-critical — a denied permission or lookup failure shows a
+/// small unobtrusive message with a retry, rather than an error state.
 class WeatherWidget extends ConsumerWidget {
   const WeatherWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settingsAsync = ref.watch(settingsProvider);
     final weatherAsync = ref.watch(weatherProvider);
 
     return Container(
@@ -28,14 +28,31 @@ class WeatherWidget extends ConsumerWidget {
           height: 90,
           child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
-        error: (e, st) => const SizedBox(
-          height: 90,
-          child: Center(
-            child: Text('Weather unavailable', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-          ),
-        ),
+        error: (e, st) {
+          return SizedBox(
+            height: 90,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.location_off_outlined, size: 18, color: AppColors.textSecondary),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Enable location for local weather',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                  ),
+                  const SizedBox(height: 6),
+                  InkWell(
+                    onTap: () => ref.invalidate(weatherProvider),
+                    child: const Text('Retry', style: TextStyle(color: AppColors.accentEnd, fontSize: 11)),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
         data: (weather) {
-          final city = settingsAsync.value?.weatherCity ?? '';
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -44,7 +61,7 @@ class WeatherWidget extends ConsumerWidget {
                   Icon(Icons.location_on, size: 14, color: AppColors.textSecondary),
                   const SizedBox(width: 4),
                   Expanded(
-                    child: Text(city,
+                    child: Text(weather.cityName,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                   ),

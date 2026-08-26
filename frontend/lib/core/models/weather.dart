@@ -4,19 +4,22 @@ class Weather {
   final double temperatureC;
   final int weatherCode;
   final bool isDay;
+  final String cityName;
 
   const Weather({
     required this.temperatureC,
     required this.weatherCode,
     required this.isDay,
+    required this.cityName,
   });
 
-  factory Weather.fromOpenMeteoJson(Map<String, dynamic> json) {
+  factory Weather.fromOpenMeteoJson(Map<String, dynamic> json, {required String cityName}) {
     final current = json['current'] as Map<String, dynamic>;
     return Weather(
       temperatureC: (current['temperature_2m'] as num).toDouble(),
       weatherCode: current['weather_code'] as int,
       isDay: (current['is_day'] as num) == 1,
+      cityName: cityName,
     );
   }
 
