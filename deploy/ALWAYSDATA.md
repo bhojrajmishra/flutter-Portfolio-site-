@@ -118,23 +118,23 @@ settings, enable **Let's Encrypt** — one toggle, auto-renewing.
 
 ## Routine updates
 
-There's no `deploy.sh` for this target yet (the generic one assumes
-PM2/systemd, which alwaysdata doesn't use — it supervises the Node process
-itself once the Site exists). To ship a change:
+Run `./deploy/alwaysdata_deploy.sh` from the repo root — it builds both
+apps, strips the unused CanvasKit assets, and uploads everything.
 
-```bash
-# Backend
-cd backend && npm run build
-scp -i ~/.ssh/alwaysdata_portfolio -r dist bhojrajmishra@ssh-bhojrajmishra.alwaysdata.net:/home/bhojrajmishra/portfolio/backend/
-# alwaysdata restarts the Node site automatically on file changes; if not,
-# use the "Restart" button on the Site in the admin panel.
-
-# Frontend
-cd frontend && flutter build web --release
-# strip unused CanvasKit variants + symbol maps before uploading (see
-# "Already done" above for the exact file list) — keeps well within quota
-scp -i ~/.ssh/alwaysdata_portfolio -r build/web/* bhojrajmishra@ssh-bhojrajmishra.alwaysdata.net:/home/bhojrajmishra/portfolio/frontend/
-```
+**Important: alwaysdata does *not* auto-restart the Node site on file
+changes** (confirmed empirically — code changes silently don't take effect
+until restarted). After any backend change:
+**admin.alwaysdata.com → Web → Sites → the Node.js `/api` site → Restart.**
+The frontend needs no restart — static files are live the moment they're
+uploaded.
 
 If a change adds new tables/columns, apply the updated `sql/schema.sql`
-manually first (`CREATE TABLE IF NOT EXISTS`, safe to re-run).
+manually first (it's `CREATE TABLE IF NOT EXISTS`, so re-running the whole
+file is safe — but a new column on an *existing* table needs its own
+`ALTER TABLE ... ADD COLUMN ...`, run by hand):
+
+```bash
+ssh -i ~/.ssh/alwaysdata_portfolio -o IdentitiesOnly=yes bhojrajmishra@ssh-bhojrajmishra.alwaysdata.net \
+  "mysql -h mysql-bhojrajmishra.alwaysdata.net -u bhojrajmishra_portfolio -p'<password>' bhojrajmishra_portfolio" \
+  < backend/sql/schema.sql
+```
