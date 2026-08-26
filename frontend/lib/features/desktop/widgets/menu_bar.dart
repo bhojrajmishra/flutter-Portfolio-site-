@@ -69,6 +69,7 @@ class _DesktopMenuBarState extends ConsumerState<DesktopMenuBar> {
           _MenuItem(
               label: 'Experience', onTap: () => notifier.openWindow('experience', desktopSize: widget.desktopSize)),
           _MenuItem(label: 'Contact', onTap: () => notifier.openWindow('contact', desktopSize: widget.desktopSize)),
+          _MenuItem(label: 'Blog', onTap: () => notifier.openWindow('blog', desktopSize: widget.desktopSize)),
           const Spacer(),
           TextButton(
             onPressed: () => context.go('/admin'),

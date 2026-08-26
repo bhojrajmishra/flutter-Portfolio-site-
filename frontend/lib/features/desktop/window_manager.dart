@@ -17,6 +17,7 @@ const windowDefinitions = <String, WindowDef>{
   'experience':
       WindowDef(title: 'Experience & Education', icon: Icons.timeline_outlined, defaultSize: Size(680, 560)),
   'contact': WindowDef(title: 'Contact', icon: Icons.mail_outline, defaultSize: Size(520, 540)),
+  'blog': WindowDef(title: 'Blog', icon: Icons.travel_explore_rounded, defaultSize: Size(820, 620)),
 };
 
 @immutable

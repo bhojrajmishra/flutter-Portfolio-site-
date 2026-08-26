@@ -23,6 +23,8 @@ const _navItems = [
   _NavItem('Social Links', Icons.link, '/admin/social-links'),
   _NavItem('Resume', Icons.description_outlined, '/admin/resume'),
   _NavItem('Messages', Icons.mail_outline, '/admin/contact'),
+  _NavItem('Blog', Icons.travel_explore_outlined, '/admin/blog'),
+  _NavItem('Android App', Icons.android, '/admin/apk'),
   _NavItem('Settings', Icons.settings_outlined, '/admin/settings'),
 ];
 

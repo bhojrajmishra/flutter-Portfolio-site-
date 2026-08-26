@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/about_content.dart';
+import '../models/apk_file.dart';
+import '../models/blog_post.dart';
 import '../models/contact_message.dart';
 import '../models/education.dart';
 import '../models/experience.dart';
@@ -138,6 +140,40 @@ class PortfolioRepository {
 
   Future<void> updateSettings(SiteSettings settings) =>
       _dio.put('/settings', data: settings.toJson());
+
+  // ---- Blog ----
+  Future<List<BlogPost>> getBlogPosts() async {
+    final res = await _dio.get('/blog');
+    return (res.data as List).map((e) => BlogPost.fromJson(e)).toList();
+  }
+
+  Future<BlogPost> createBlogPost(BlogPost post) async {
+    final res = await _dio.post('/blog', data: post.toJson());
+    return BlogPost.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<BlogPost> updateBlogPost(int id, BlogPost post) async {
+    final res = await _dio.put('/blog/$id', data: post.toJson());
+    return BlogPost.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteBlogPost(int id) => _dio.delete('/blog/$id');
+
+  // ---- Android app (APK) ----
+  Future<ApkFile?> getApk() async {
+    final res = await _dio.get('/apk');
+    if (res.data == null) return null;
+    return ApkFile.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<ApkFile> uploadApk(List<int> bytes, String filename, {String? versionLabel}) async {
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: filename),
+      if (versionLabel != null && versionLabel.isNotEmpty) 'versionLabel': versionLabel,
+    });
+    final res = await _dio.post('/apk', data: formData);
+    return ApkFile.fromJson(res.data as Map<String, dynamic>);
+  }
 }
 
 final portfolioRepositoryProvider = Provider<PortfolioRepository>((ref) {

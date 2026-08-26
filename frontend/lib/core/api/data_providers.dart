@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/about_content.dart';
+import '../models/apk_file.dart';
+import '../models/blog_post.dart';
 import '../models/contact_message.dart';
 import '../models/education.dart';
 import '../models/experience.dart';
@@ -58,6 +60,14 @@ final settingsProvider = FutureProvider<SiteSettings>((ref) {
   return ref.watch(portfolioRepositoryProvider).getSettings();
 });
 
+final blogPostsProvider = FutureProvider<List<BlogPost>>((ref) {
+  return ref.watch(portfolioRepositoryProvider).getBlogPosts();
+});
+
+final apkProvider = FutureProvider<ApkFile?>((ref) {
+  return ref.watch(portfolioRepositoryProvider).getApk();
+});
+
 final weatherRepositoryProvider = Provider<WeatherRepository>((ref) => WeatherRepository());
 
 /// Live weather for the admin-configured location. Chained off
@@ -82,4 +92,6 @@ void invalidateAllContent(WidgetRef ref) {
   ref.invalidate(socialLinksProvider);
   ref.invalidate(resumeProvider);
   ref.invalidate(settingsProvider);
+  ref.invalidate(blogPostsProvider);
+  ref.invalidate(apkProvider);
 }

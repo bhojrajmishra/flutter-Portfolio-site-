@@ -82,6 +82,16 @@ CREATE TABLE IF NOT EXISTS resume_files (
   uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Same "only the latest row is current" pattern as resume_files — the
+-- downloadable Android app build.
+CREATE TABLE IF NOT EXISTS apk_files (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  filename VARCHAR(255) NOT NULL,
+  version_label VARCHAR(50) NULL,
+  url TEXT NOT NULL,
+  uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS contact_messages (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
@@ -98,4 +108,16 @@ CREATE TABLE IF NOT EXISTS site_settings (
   -- DOUBLE (not DECIMAL) so mysql2 returns a plain JS number, not a string.
   weather_lat DOUBLE NOT NULL DEFAULT 26.812100,
   weather_lon DOUBLE NOT NULL DEFAULT 87.283902
+);
+
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  excerpt TEXT NOT NULL,
+  content TEXT NOT NULL, -- Markdown
+  cover_image_url TEXT NULL,
+  is_published TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

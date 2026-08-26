@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../window_content/about_window_content.dart';
+import '../window_content/blog_window_content.dart';
 import '../window_content/contact_window_content.dart';
 import '../window_content/experience_window_content.dart';
 import '../window_content/projects_window_content.dart';
@@ -18,6 +19,8 @@ Widget buildWindowContent(String id) {
       return const ExperienceWindowContent();
     case 'contact':
       return const ContactWindowContent();
+    case 'blog':
+      return const BlogWindowContent();
     default:
       return const SizedBox.shrink();
   }

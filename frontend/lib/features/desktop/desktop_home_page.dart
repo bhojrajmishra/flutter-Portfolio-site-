@@ -101,6 +101,7 @@ class _MobileHome extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resume = ref.watch(resumeProvider).value;
+    final apk = ref.watch(apkProvider).value;
     final projects = ref.watch(projectsProvider).value;
     final socialLinks = ref.watch(socialLinksProvider).value ?? [];
     final hero = ref.watch(heroProvider).value;
@@ -160,6 +161,16 @@ class _MobileHome extends ConsumerWidget {
                         label: 'Contact',
                         onTap: () => _openFullscreen(context, 'contact'),
                       ),
+                      DesktopIconButton(
+                        icon: Icons.explore_rounded,
+                        tileGradient: const LinearGradient(
+                          colors: [Color(0xFF63E2FF), Color(0xFF1E88E5)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        label: 'Blog',
+                        onTap: () => _openFullscreen(context, 'blog'),
+                      ),
                       if (resume != null)
                         DesktopIconButton(
                           icon: Icons.picture_as_pdf_rounded,
@@ -168,6 +179,16 @@ class _MobileHome extends ConsumerWidget {
                           label: 'Resume',
                           onTap: () => launchUrl(
                             Uri.parse(resume.url),
+                            webOnlyWindowName: '_blank',
+                          ),
+                        ),
+                      if (apk != null)
+                        DesktopIconButton(
+                          icon: Icons.android_rounded,
+                          tileColor: const Color(0xFF3DDC84),
+                          label: 'Download App',
+                          onTap: () => launchUrl(
+                            Uri.parse(apk.url),
                             webOnlyWindowName: '_blank',
                           ),
                         ),

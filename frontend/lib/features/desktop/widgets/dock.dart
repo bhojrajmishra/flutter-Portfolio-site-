@@ -18,6 +18,7 @@ class Dock extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resume = ref.watch(resumeProvider).value;
+    final apk = ref.watch(apkProvider).value;
     final openWindows = ref.watch(windowManagerProvider);
     final notifier = ref.read(windowManagerProvider.notifier);
     final openIds = openWindows.map((w) => w.id).toSet();
@@ -42,6 +43,16 @@ class Dock extends ConsumerWidget {
                 tooltip: 'Resume',
                 onTap: () => launchUrl(Uri.parse(resume.url), webOnlyWindowName: '_blank'),
               ),
+            if (apk != null) ...[
+              const SizedBox(width: 8),
+              _DockIcon(
+                icon: Icons.android_rounded,
+                iconColor: Colors.white,
+                tileColor: const Color(0xFF3DDC84),
+                tooltip: apk.versionLabel != null ? 'Download App (v${apk.versionLabel})' : 'Download App',
+                onTap: () => launchUrl(Uri.parse(apk.url), webOnlyWindowName: '_blank'),
+              ),
+            ],
             const SizedBox(width: 8),
             _DockIcon(
               icon: Icons.person_rounded,
@@ -75,6 +86,19 @@ class Dock extends ConsumerWidget {
               tooltip: 'Contact',
               isOpen: openIds.contains('contact'),
               onTap: () => notifier.openWindow('contact', desktopSize: desktopSize),
+            ),
+            const SizedBox(width: 8),
+            _DockIcon(
+              icon: Icons.explore_rounded,
+              iconColor: Colors.white,
+              tileGradient: const LinearGradient(
+                colors: [Color(0xFF63E2FF), Color(0xFF1E88E5)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              tooltip: 'Blog',
+              isOpen: openIds.contains('blog'),
+              onTap: () => notifier.openWindow('blog', desktopSize: desktopSize),
             ),
           ],
         ),
