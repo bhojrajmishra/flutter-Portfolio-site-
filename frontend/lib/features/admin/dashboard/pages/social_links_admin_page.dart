@@ -9,7 +9,17 @@ import '../../../../core/widgets/glass_card.dart';
 import '../../widgets/admin_helpers.dart';
 import '../../widgets/admin_page.dart';
 
-const _suggestedPlatforms = ['github', 'linkedin', 'pubdev', 'twitter', 'email', 'website'];
+const _suggestedPlatforms = [
+  'github',
+  'linkedin',
+  'pubdev',
+  'twitter',
+  'instagram',
+  'youtube',
+  'buymeacoffee',
+  'email',
+  'website',
+];
 
 class SocialLinksAdminPage extends ConsumerWidget {
   const SocialLinksAdminPage({super.key});
@@ -17,6 +27,7 @@ class SocialLinksAdminPage extends ConsumerWidget {
   Future<void> _openForm(BuildContext context, WidgetRef ref, {SocialLink? existing}) async {
     final platformController = TextEditingController(text: existing?.platform ?? '');
     final urlController = TextEditingController(text: existing?.url ?? '');
+    final badgeController = TextEditingController(text: existing?.badgeText ?? '');
     final formKey = GlobalKey<FormState>();
 
     final saved = await showDialog<bool>(
@@ -46,6 +57,14 @@ class SocialLinksAdminPage extends ConsumerWidget {
                     return null;
                   },
                 ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: badgeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Badge (optional, e.g. "25+" repos, "5K+" connections)',
+                    helperText: "Your own real number — shown as-is on the icon. Leave blank for none.",
+                  ),
+                ),
               ],
             ),
           ),
@@ -64,9 +83,12 @@ class SocialLinksAdminPage extends ConsumerWidget {
 
     if (saved != true) return;
 
-    await ref
-        .read(portfolioRepositoryProvider)
-        .upsertSocialLink(platformController.text.trim().toLowerCase(), urlController.text.trim());
+    final badgeText = badgeController.text.trim();
+    await ref.read(portfolioRepositoryProvider).upsertSocialLink(
+          platformController.text.trim().toLowerCase(),
+          urlController.text.trim(),
+          badgeText: badgeText.isEmpty ? null : badgeText,
+        );
     ref.invalidate(socialLinksProvider);
   }
 
@@ -108,7 +130,22 @@ class SocialLinksAdminPage extends ConsumerWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(l.platform, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  Row(
+                                    children: [
+                                      Text(l.platform, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      if (l.badgeText != null && l.badgeText!.isNotEmpty) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: Colors.redAccent,
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(l.badgeText!, style: const TextStyle(fontSize: 11)),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
                                   Text(l.url,
                                       style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                                       overflow: TextOverflow.ellipsis),

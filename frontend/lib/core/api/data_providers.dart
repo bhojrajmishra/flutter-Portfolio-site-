@@ -7,9 +7,12 @@ import '../models/experience.dart';
 import '../models/hero_content.dart';
 import '../models/project.dart';
 import '../models/resume_file.dart';
+import '../models/site_settings.dart';
 import '../models/skill.dart';
 import '../models/social_link.dart';
+import '../models/weather.dart';
 import 'portfolio_repository.dart';
+import 'weather_repository.dart';
 
 // Each provider fetches once and caches; call `ref.invalidate(xProvider)`
 // after an admin write to refetch and propagate the update to every listener
@@ -51,6 +54,23 @@ final contactMessagesProvider = FutureProvider<List<ContactMessage>>((ref) {
   return ref.watch(portfolioRepositoryProvider).getContactMessages();
 });
 
+final settingsProvider = FutureProvider<SiteSettings>((ref) {
+  return ref.watch(portfolioRepositoryProvider).getSettings();
+});
+
+final weatherRepositoryProvider = Provider<WeatherRepository>((ref) => WeatherRepository());
+
+/// Live weather for the admin-configured location. Chained off
+/// [settingsProvider]; UI should treat a failure here as non-fatal (show
+/// "weather unavailable") since it's a decorative feature.
+final weatherProvider = FutureProvider<Weather>((ref) async {
+  final settings = await ref.watch(settingsProvider.future);
+  return ref.watch(weatherRepositoryProvider).getCurrentWeather(
+        lat: settings.weatherLat,
+        lon: settings.weatherLon,
+      );
+});
+
 /// Invalidates every public-content provider — call after any admin write.
 void invalidateAllContent(WidgetRef ref) {
   ref.invalidate(heroProvider);
@@ -61,4 +81,5 @@ void invalidateAllContent(WidgetRef ref) {
   ref.invalidate(educationProvider);
   ref.invalidate(socialLinksProvider);
   ref.invalidate(resumeProvider);
+  ref.invalidate(settingsProvider);
 }

@@ -8,6 +8,7 @@ import '../models/experience.dart';
 import '../models/hero_content.dart';
 import '../models/project.dart';
 import '../models/resume_file.dart';
+import '../models/site_settings.dart';
 import '../models/skill.dart';
 import '../models/social_link.dart';
 import 'auth_controller.dart';
@@ -83,8 +84,10 @@ class PortfolioRepository {
     return (res.data as List).map((e) => SocialLink.fromJson(e)).toList();
   }
 
-  Future<void> upsertSocialLink(String platform, String url) =>
-      _dio.put('/social-links/$platform', data: {'url': url});
+  Future<void> upsertSocialLink(String platform, String url, {String? badgeText}) => _dio.put(
+        '/social-links/$platform',
+        data: {'url': url, 'badgeText': badgeText},
+      );
   Future<void> deleteSocialLink(String platform) => _dio.delete('/social-links/$platform');
 
   // ---- Resume ----
@@ -126,6 +129,15 @@ class PortfolioRepository {
 
   Future<void> markContactMessageRead(int id) => _dio.put('/contact/$id/read');
   Future<void> deleteContactMessage(int id) => _dio.delete('/contact/$id');
+
+  // ---- Site settings (weather location) ----
+  Future<SiteSettings> getSettings() async {
+    final res = await _dio.get('/settings');
+    return SiteSettings.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<void> updateSettings(SiteSettings settings) =>
+      _dio.put('/settings', data: settings.toJson());
 }
 
 final portfolioRepositoryProvider = Provider<PortfolioRepository>((ref) {

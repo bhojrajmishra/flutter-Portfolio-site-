@@ -13,6 +13,7 @@ import experienceRouter from "./routes/experience";
 import heroRouter from "./routes/hero";
 import projectsRouter from "./routes/projects";
 import resumeRouter from "./routes/resume";
+import settingsRouter from "./routes/settings";
 import skillsRouter from "./routes/skills";
 import socialLinksRouter from "./routes/socialLinks";
 import uploadsRouter from "./routes/uploads";
@@ -44,6 +45,7 @@ app.use("/api/social-links", socialLinksRouter);
 app.use("/api/resume", resumeRouter);
 app.use("/api/contact", contactRouter);
 app.use("/api/uploads", uploadsRouter);
+app.use("/api/settings", settingsRouter);
 
 app.use((_req, res) => res.status(404).json({ error: "Not found" }));
 app.use(errorHandler);

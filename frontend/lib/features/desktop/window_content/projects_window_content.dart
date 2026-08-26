@@ -5,26 +5,24 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api/data_providers.dart';
 import '../../../core/models/project.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/glass_card.dart';
-import 'section_heading.dart';
 
-class ProjectsSection extends ConsumerWidget {
-  const ProjectsSection({super.key});
+class ProjectsWindowContent extends ConsumerWidget {
+  const ProjectsWindowContent({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final projectsAsync = ref.watch(projectsProvider);
-    final width = MediaQuery.of(context).size.width;
-    final columns = Breakpoints.isDesktop(width) ? 3 : (Breakpoints.isTablet(width) ? 2 : 1);
 
-    return SectionContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SectionHeading(title: 'Projects'),
-          const SizedBox(height: 32),
-          projectsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth > 720 ? 3 : (constraints.maxWidth > 480 ? 2 : 1);
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: projectsAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()),
+            ),
             error: (e, st) => Text('Failed to load: $e'),
             data: (projects) {
               if (projects.isEmpty) {
@@ -37,16 +35,16 @@ class ProjectsSection extends ConsumerWidget {
                 itemCount: projects.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: columns,
-                  crossAxisSpacing: 20,
-                  mainAxisSpacing: 20,
-                  mainAxisExtent: 280,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  mainAxisExtent: 260,
                 ),
                 itemBuilder: (context, i) => _ProjectCard(project: projects[i]),
               );
             },
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -57,17 +55,22 @@ class _ProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
-      padding: const EdgeInsets.all(20),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.glassBorder),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (project.imageUrl != null && project.imageUrl!.isNotEmpty)
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               child: Image.network(
                 project.imageUrl!,
-                height: 100,
+                height: 80,
                 width: double.infinity,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stack) => const SizedBox.shrink(),
@@ -81,26 +84,25 @@ class _ProjectCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-          const SizedBox(height: 12),
-          Text(project.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
+          Text(project.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
           Expanded(
             child: Text(
               project.description,
-              maxLines: 4,
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
+              style: const TextStyle(color: AppColors.textSecondary, height: 1.4, fontSize: 13),
             ),
           ),
           if (project.techTags.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 8, bottom: 8),
+              padding: const EdgeInsets.only(top: 6, bottom: 4),
               child: Wrap(
                 spacing: 6,
-                runSpacing: 6,
+                runSpacing: 4,
                 children: project.techTags
-                    .map((t) => Text('#$t',
-                        style: const TextStyle(fontSize: 12, color: AppColors.accentEnd)))
+                    .map((t) => Text('#$t', style: const TextStyle(fontSize: 11, color: AppColors.accentEnd)))
                     .toList(),
               ),
             ),
@@ -111,14 +113,14 @@ class _ProjectCard extends StatelessWidget {
                   tooltip: 'Live',
                   visualDensity: VisualDensity.compact,
                   onPressed: () => launchUrl(Uri.parse(project.liveUrl!), webOnlyWindowName: '_blank'),
-                  icon: const Icon(Icons.open_in_new, size: 18),
+                  icon: const Icon(Icons.open_in_new, size: 16),
                 ),
               if (project.repoUrl != null && project.repoUrl!.isNotEmpty)
                 IconButton(
                   tooltip: 'Source',
                   visualDensity: VisualDensity.compact,
                   onPressed: () => launchUrl(Uri.parse(project.repoUrl!), webOnlyWindowName: '_blank'),
-                  icon: const Icon(Icons.code, size: 18),
+                  icon: const Icon(Icons.code, size: 16),
                 ),
             ],
           ),

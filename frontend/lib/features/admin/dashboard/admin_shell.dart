@@ -23,6 +23,7 @@ const _navItems = [
   _NavItem('Social Links', Icons.link, '/admin/social-links'),
   _NavItem('Resume', Icons.description_outlined, '/admin/resume'),
   _NavItem('Messages', Icons.mail_outline, '/admin/contact'),
+  _NavItem('Settings', Icons.settings_outlined, '/admin/settings'),
 ];
 
 /// Sidebar + content shell wrapping every /admin/* route once logged in.

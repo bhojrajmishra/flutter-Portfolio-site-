@@ -12,9 +12,10 @@ import '../../features/admin/dashboard/pages/experience_admin_page.dart';
 import '../../features/admin/dashboard/pages/hero_admin_page.dart';
 import '../../features/admin/dashboard/pages/projects_admin_page.dart';
 import '../../features/admin/dashboard/pages/resume_admin_page.dart';
+import '../../features/admin/dashboard/pages/settings_admin_page.dart';
 import '../../features/admin/dashboard/pages/skills_admin_page.dart';
 import '../../features/admin/dashboard/pages/social_links_admin_page.dart';
-import '../../features/public_site/public_site_page.dart';
+import '../../features/desktop/desktop_home_page.dart';
 import '../api/auth_controller.dart';
 
 /// Bridges Riverpod auth state changes into a Listenable go_router can use
@@ -43,7 +44,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/', builder: (context, state) => const PublicSitePage()),
+      GoRoute(path: '/', builder: (context, state) => const DesktopHomePage()),
       GoRoute(path: '/admin/login', builder: (context, state) => const AdminLoginPage()),
       ShellRoute(
         builder: (context, state, child) => AdminShell(child: child),
@@ -61,6 +62,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               builder: (context, state) => const SocialLinksAdminPage()),
           GoRoute(path: '/admin/resume', builder: (context, state) => const ResumeAdminPage()),
           GoRoute(path: '/admin/contact', builder: (context, state) => const ContactAdminPage()),
+          GoRoute(path: '/admin/settings', builder: (context, state) => const SettingsAdminPage()),
         ],
       ),
     ],

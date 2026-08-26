@@ -67,7 +67,11 @@ CREATE TABLE IF NOT EXISTS education (
 CREATE TABLE IF NOT EXISTS social_links (
   id INT AUTO_INCREMENT PRIMARY KEY,
   platform VARCHAR(100) NOT NULL UNIQUE,
-  url TEXT NOT NULL
+  url TEXT NOT NULL,
+  -- Optional self-reported label shown as a badge on the desktop icon
+  -- (e.g. "25+", "5K+"). Never computed/fabricated by the app — the admin
+  -- types their own real number if they want one shown. NULL = no badge.
+  badge_text VARCHAR(20) NULL
 );
 
 -- Only the most recently uploaded row (highest id/uploaded_at) is "current".
@@ -85,4 +89,13 @@ CREATE TABLE IF NOT EXISTS contact_messages (
   message TEXT NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   is_read TINYINT(1) NOT NULL DEFAULT 0
+);
+
+-- Singleton row (id always 1). Drives the desktop's live weather widget.
+CREATE TABLE IF NOT EXISTS site_settings (
+  id INT PRIMARY KEY,
+  weather_city VARCHAR(255) NOT NULL DEFAULT 'Dharan',
+  -- DOUBLE (not DECIMAL) so mysql2 returns a plain JS number, not a string.
+  weather_lat DOUBLE NOT NULL DEFAULT 26.812100,
+  weather_lon DOUBLE NOT NULL DEFAULT 87.283902
 );

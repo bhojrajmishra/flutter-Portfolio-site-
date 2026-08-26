@@ -32,6 +32,14 @@ async function main() {
      ON DUPLICATE KEY UPDATE id = id`
   );
 
+  // Defaults to Dharan, Nepal — column defaults in schema.sql cover this too,
+  // but this makes the row exist even against an older database.
+  await pool.query(
+    `INSERT INTO site_settings (id, weather_city, weather_lat, weather_lon)
+     VALUES (1, 'Dharan', 26.812100, 87.283902)
+     ON DUPLICATE KEY UPDATE id = id`
+  );
+
   const [skillRows] = await pool.query<RowDataPacket[]>("SELECT COUNT(*) AS count FROM skills");
   if (skillRows[0].count === 0) {
     await pool.query(

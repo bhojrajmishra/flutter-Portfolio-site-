@@ -11,12 +11,15 @@ interface SocialLinkRow extends RowDataPacket {
   id: number;
   platform: string;
   url: string;
+  badgeText: string | null;
 }
+
+const SELECT_COLUMNS = "id, platform, url, badge_text AS badgeText";
 
 router.get(
   "/",
   asyncHandler(async (_req, res) => {
-    const [rows] = await pool.query<SocialLinkRow[]>("SELECT id, platform, url FROM social_links ORDER BY platform ASC");
+    const [rows] = await pool.query<SocialLinkRow[]>(`SELECT ${SELECT_COLUMNS} FROM social_links ORDER BY platform ASC`);
     res.json(rows);
   })
 );
@@ -24,21 +27,23 @@ router.get(
 const socialLinkSchema = z.object({
   platform: z.string().min(1), // e.g. "github", "linkedin", "pubdev"
   url: z.string().url(),
+  // Optional, self-reported by the admin — never computed/fabricated here.
+  badgeText: z.string().max(20).optional().nullable(),
 });
 
-// Upsert by platform: admin sets/updates the url for a given platform.
+// Upsert by platform: admin sets/updates the url (and optional badge) for a given platform.
 router.put(
   "/:platform",
   requireAuth,
   asyncHandler(async (req, res) => {
     const platform = req.params.platform;
-    const { url } = socialLinkSchema.pick({ url: true }).parse(req.body);
+    const { url, badgeText } = socialLinkSchema.pick({ url: true, badgeText: true }).parse(req.body);
     await pool.query(
-      `INSERT INTO social_links (platform, url) VALUES (?, ?)
-       ON DUPLICATE KEY UPDATE url = VALUES(url)`,
-      [platform, url]
+      `INSERT INTO social_links (platform, url, badge_text) VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE url = VALUES(url), badge_text = VALUES(badge_text)`,
+      [platform, url, badgeText ?? null]
     );
-    const [rows] = await pool.query<SocialLinkRow[]>("SELECT id, platform, url FROM social_links WHERE platform = ?", [
+    const [rows] = await pool.query<SocialLinkRow[]>(`SELECT ${SELECT_COLUMNS} FROM social_links WHERE platform = ?`, [
       platform,
     ]);
     res.json(rows[0]);
