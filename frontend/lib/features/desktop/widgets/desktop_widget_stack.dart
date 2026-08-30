@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/api/data_providers.dart';
@@ -10,10 +11,11 @@ import '../../../core/widgets/platform_icons.dart';
 import '../window_manager.dart';
 
 /// Fills the empty middle of the desktop with a macOS-Notification-Center
-/// style "widget stack" — a profile card, a live stats card, and a
-/// quick-actions card. Every number shown comes from real admin-entered
-/// content (project/skill/experience counts), nothing fabricated. Sits
-/// behind open windows in the Stack so it never steals clicks from them.
+/// style "widget stack" — a profile card, an autoplaying career-history
+/// reel, a live stats card, and a quick-actions card. Every number/entry
+/// shown comes from real admin-entered content (project/skill/experience
+/// data), nothing fabricated. Sits behind open windows in the Stack so it
+/// never steals clicks from them.
 class DesktopWidgetStack extends ConsumerWidget {
   final Size desktopSize;
   const DesktopWidgetStack({super.key, required this.desktopSize});
@@ -100,6 +102,7 @@ class DesktopWidgetStack extends ConsumerWidget {
               ],
             ),
           ),
+          const _CareerReelCard(),
           _WidgetCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,13 +174,310 @@ class DesktopWidgetStack extends ConsumerWidget {
 
 class _WidgetCard extends StatelessWidget {
   final Widget child;
-  const _WidgetCard({required this.child});
+  final double width;
+  const _WidgetCard({required this.child, this.width = 220});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 220,
+      width: width,
       child: GlassCard(padding: const EdgeInsets.all(16), borderRadius: 20, child: child),
+    );
+  }
+}
+
+final _reelMonthYear = DateFormat('MMM yyyy');
+
+String _reelRange(DateTime start, DateTime? end) {
+  final startStr = _reelMonthYear.format(start);
+  final endStr = end != null ? _reelMonthYear.format(end) : 'Present';
+  return '$startStr — $endStr';
+}
+
+class _ReelEntry {
+  final IconData icon;
+  final String typeLabel;
+  final String title;
+  final String subtitle;
+  final String range;
+  final String? description;
+  final DateTime startDate;
+
+  const _ReelEntry({
+    required this.icon,
+    required this.typeLabel,
+    required this.title,
+    required this.subtitle,
+    required this.range,
+    required this.startDate,
+    this.description,
+  });
+}
+
+/// Autoplaying "story"-style reel through real Experience + Education
+/// entries (most recent first) — a thin progress bar per entry fills over
+/// a few seconds, then advances, with a fade/slide transition between
+/// slides. Hovering pauses playback; the arrows and progress bars also
+/// support jumping directly to a slide.
+class _CareerReelCard extends ConsumerStatefulWidget {
+  const _CareerReelCard();
+
+  @override
+  ConsumerState<_CareerReelCard> createState() => _CareerReelCardState();
+}
+
+class _CareerReelCardState extends ConsumerState<_CareerReelCard> with SingleTickerProviderStateMixin {
+  static const _slideDuration = Duration(seconds: 6);
+
+  late final AnimationController _controller;
+  int _index = 0;
+  bool _playbackStarted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: _slideDuration)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) _advance();
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _advance() {
+    if (!mounted) return;
+    setState(() => _index++);
+    _controller.forward(from: 0);
+  }
+
+  void _goTo(int target, int length) {
+    if (length == 0) return;
+    setState(() => _index = ((target % length) + length) % length);
+    _controller.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final experience = ref.watch(experienceProvider).value ?? [];
+    final education = ref.watch(educationProvider).value ?? [];
+
+    final entries = <_ReelEntry>[
+      for (final e in experience)
+        _ReelEntry(
+          icon: Icons.work_outline_rounded,
+          typeLabel: 'Experience',
+          title: e.role,
+          subtitle: e.company,
+          range: _reelRange(e.startDate, e.endDate),
+          startDate: e.startDate,
+          description: e.description,
+        ),
+      for (final e in education)
+        _ReelEntry(
+          icon: Icons.school_outlined,
+          typeLabel: 'Education',
+          title: e.degree,
+          subtitle: e.school,
+          range: _reelRange(e.startDate, e.endDate),
+          startDate: e.startDate,
+        ),
+    ]..sort((a, b) => b.startDate.compareTo(a.startDate));
+
+    if (entries.isEmpty) {
+      return _WidgetCard(
+        width: 320,
+        child: const SizedBox(
+          height: 160,
+          child: Center(
+            child: Text('Add experience or education from the admin panel.',
+                textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          ),
+        ),
+      );
+    }
+
+    if (!_playbackStarted) {
+      _playbackStarted = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _controller.forward();
+      });
+    }
+
+    final safeIndex = _index % entries.length;
+    final entry = entries[safeIndex];
+
+    return _WidgetCard(
+      width: 320,
+      child: MouseRegion(
+        onEnter: (_) => _controller.stop(),
+        onExit: (_) => _controller.forward(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Row(
+              children: [
+                Text(
+                  'MY JOURNEY',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.6),
+                ),
+                Spacer(),
+                Icon(Icons.play_circle_outline_rounded, size: 13, color: AppColors.textSecondary),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                for (var i = 0; i < entries.length; i++) ...[
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _goTo(i, entries.length),
+                      child: _ReelProgressBar(controller: _controller, isCurrent: i == safeIndex, isPast: i < safeIndex),
+                    ),
+                  ),
+                  if (i != entries.length - 1) const SizedBox(width: 4),
+                ],
+              ],
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 132,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 400),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(animation),
+                    child: child,
+                  ),
+                ),
+                child: _ReelSlide(key: ValueKey(safeIndex), entry: entry),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _ReelNavButton(icon: Icons.chevron_left_rounded, onTap: () => _goTo(safeIndex - 1, entries.length)),
+                const Spacer(),
+                Text('${safeIndex + 1} / ${entries.length}', style: const TextStyle(fontSize: 10.5, color: AppColors.textSecondary)),
+                const Spacer(),
+                _ReelNavButton(icon: Icons.chevron_right_rounded, onTap: () => _goTo(safeIndex + 1, entries.length)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReelProgressBar extends StatelessWidget {
+  final AnimationController controller;
+  final bool isCurrent;
+  final bool isPast;
+  const _ReelProgressBar({required this.controller, required this.isCurrent, required this.isPast});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 3,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(2),
+        child: Stack(
+          children: [
+            Container(color: AppColors.glassFill),
+            if (isPast)
+              const DecoratedBox(decoration: BoxDecoration(gradient: AppColors.accentGradient))
+            else if (isCurrent)
+              AnimatedBuilder(
+                animation: controller,
+                builder: (context, _) => FractionallySizedBox(
+                  widthFactor: controller.value,
+                  alignment: Alignment.centerLeft,
+                  child: const DecoratedBox(decoration: BoxDecoration(gradient: AppColors.accentGradient)),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReelNavButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _ReelNavButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 22,
+          height: 22,
+          decoration: BoxDecoration(color: AppColors.glassFill, shape: BoxShape.circle),
+          child: Icon(icon, size: 15, color: AppColors.textPrimary),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReelSlide extends StatelessWidget {
+  final _ReelEntry entry;
+  const _ReelSlide({required super.key, required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Icon(entry.icon, size: 14, color: AppColors.accentEnd),
+            const SizedBox(width: 6),
+            Text(
+              entry.typeLabel.toUpperCase(),
+              style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: AppColors.accentEnd, letterSpacing: 0.5),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          entry.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          entry.subtitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 12.5, color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: 2),
+        Text(entry.range, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+        if (entry.description != null && entry.description!.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Expanded(
+            child: Text(
+              entry.description!,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary, height: 1.4),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
