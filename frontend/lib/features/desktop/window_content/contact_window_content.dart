@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/portfolio_repository.dart';
 import '../../../core/theme/app_theme.dart';
+import '../window_manager.dart';
 
 class ContactWindowContent extends ConsumerStatefulWidget {
   const ContactWindowContent({super.key});
@@ -18,6 +19,19 @@ class _ContactWindowContentState extends ConsumerState<ContactWindowContent> {
   final _messageController = TextEditingController();
   bool _sending = false;
   String? _resultMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    // Consume a one-shot draft left by the Calendar window's "Request via
+    // Contact" action, if any — cleared right away so it doesn't reappear
+    // if the visitor closes and reopens Contact later.
+    final prefill = ref.read(contactPrefillProvider);
+    if (prefill != null && prefill.isNotEmpty) {
+      _messageController.text = prefill;
+      Future.microtask(() => ref.read(contactPrefillProvider.notifier).set(null));
+    }
+  }
 
   @override
   void dispose() {

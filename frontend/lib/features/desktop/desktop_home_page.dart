@@ -161,9 +161,15 @@ class _MobileHome extends ConsumerWidget {
                         onTap: () => _openFullscreen(context, 'projects'),
                       ),
                       DesktopIconButton(
-                        icon: Icons.timeline_outlined,
+                        icon: Icons.calendar_month_rounded,
                         tileChild: const CalendarTile(),
                         tileColor: Colors.white,
+                        label: 'Calendar',
+                        onTap: () => _openFullscreen(context, 'calendar'),
+                      ),
+                      DesktopIconButton(
+                        icon: Icons.timeline_outlined,
+                        tileColor: const Color(0xFFFF9F0A),
                         label: 'Experience',
                         onTap: () => _openFullscreen(context, 'experience'),
                       ),

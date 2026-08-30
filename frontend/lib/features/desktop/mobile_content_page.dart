@@ -20,7 +20,7 @@ class MobileContentPage extends StatelessWidget {
         backgroundColor: AppColors.surface,
         title: Text(def?.title ?? ''),
       ),
-      body: buildWindowContent(windowId),
+      body: buildWindowContent(windowId, MediaQuery.sizeOf(context)),
     );
   }
 }

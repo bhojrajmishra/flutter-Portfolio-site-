@@ -67,6 +67,8 @@ class _DesktopMenuBarState extends ConsumerState<DesktopMenuBar> {
           _MenuItem(label: 'About Me', onTap: () => notifier.openWindow('about', desktopSize: widget.desktopSize)),
           _MenuItem(label: 'Projects', onTap: () => notifier.openWindow('projects', desktopSize: widget.desktopSize)),
           _MenuItem(
+              label: 'Calendar', onTap: () => notifier.openWindow('calendar', desktopSize: widget.desktopSize)),
+          _MenuItem(
               label: 'Experience', onTap: () => notifier.openWindow('experience', desktopSize: widget.desktopSize)),
           _MenuItem(label: 'Contact', onTap: () => notifier.openWindow('contact', desktopSize: widget.desktopSize)),
           _MenuItem(label: 'Blog', onTap: () => notifier.openWindow('blog', desktopSize: widget.desktopSize)),

@@ -74,6 +74,15 @@ class Dock extends ConsumerWidget {
             _DockIcon(
               tileChild: const CalendarTile(),
               tileColor: Colors.white,
+              tooltip: 'Calendar',
+              isOpen: openIds.contains('calendar'),
+              onTap: () => notifier.openWindow('calendar', desktopSize: desktopSize),
+            ),
+            const SizedBox(width: 8),
+            _DockIcon(
+              icon: Icons.timeline_outlined,
+              iconColor: Colors.white,
+              tileColor: const Color(0xFFFF9F0A),
               tooltip: 'Experience',
               isOpen: openIds.contains('experience'),
               onTap: () => notifier.openWindow('experience', desktopSize: desktopSize),

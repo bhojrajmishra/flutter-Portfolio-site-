@@ -14,6 +14,7 @@ class WindowDef {
 const windowDefinitions = <String, WindowDef>{
   'about': WindowDef(title: 'About Me', icon: Icons.person_outline, defaultSize: Size(640, 480)),
   'projects': WindowDef(title: 'Projects', icon: Icons.work_outline, defaultSize: Size(780, 580)),
+  'calendar': WindowDef(title: 'Calendar', icon: Icons.calendar_month_rounded, defaultSize: Size(760, 560)),
   'experience':
       WindowDef(title: 'Experience & Education', icon: Icons.timeline_outlined, defaultSize: Size(680, 560)),
   'contact': WindowDef(title: 'Contact', icon: Icons.mail_outline, defaultSize: Size(520, 540)),
@@ -185,3 +186,16 @@ class WindowManagerNotifier extends Notifier<List<DesktopWindow>> {
 final windowManagerProvider = NotifierProvider<WindowManagerNotifier, List<DesktopWindow>>(
   WindowManagerNotifier.new,
 );
+
+/// A pending message to drop into the Contact window's message field the
+/// next time it opens/rebuilds — set by the Calendar window's "Request via
+/// Contact" action, consumed once by [ContactWindowContent]. Session-only
+/// UI state, not persisted content.
+class ContactPrefillNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void set(String? value) => state = value;
+}
+
+final contactPrefillProvider = NotifierProvider<ContactPrefillNotifier, String?>(ContactPrefillNotifier.new);

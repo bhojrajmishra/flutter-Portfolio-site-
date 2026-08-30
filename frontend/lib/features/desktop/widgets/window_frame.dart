@@ -4,17 +4,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../window_content/about_window_content.dart';
 import '../window_content/blog_window_content.dart';
+import '../window_content/calendar_window_content.dart';
 import '../window_content/contact_window_content.dart';
 import '../window_content/experience_window_content.dart';
 import '../window_content/projects_window_content.dart';
 import '../window_manager.dart';
 
-Widget buildWindowContent(String id) {
+/// [desktopSize] is only consumed by content that itself opens another
+/// window (currently just Calendar, to jump to Contact) — everything else
+/// ignores it.
+Widget buildWindowContent(String id, Size desktopSize) {
   switch (id) {
     case 'about':
       return const AboutWindowContent();
     case 'projects':
       return const ProjectsWindowContent();
+    case 'calendar':
+      return CalendarWindowContent(desktopSize: desktopSize);
     case 'experience':
       return const ExperienceWindowContent();
     case 'contact':
@@ -61,7 +67,7 @@ class WindowFrame extends ConsumerWidget {
                 Column(
                   children: [
                     _TitleBar(window: window, notifier: notifier, desktopSize: desktopSize),
-                    Expanded(child: buildWindowContent(window.id)),
+                    Expanded(child: buildWindowContent(window.id, desktopSize)),
                   ],
                 ),
                 if (!window.isMaximized)
