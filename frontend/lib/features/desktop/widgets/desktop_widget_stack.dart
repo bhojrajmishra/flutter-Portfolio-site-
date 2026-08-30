@@ -161,7 +161,7 @@ class DesktopWidgetStack extends ConsumerWidget {
                   _ActionRow(
                     icon: Icons.picture_as_pdf_outlined,
                     label: 'View Resume',
-                    onTap: () => launchUrl(Uri.parse(resume.url), webOnlyWindowName: '_blank'),
+                    onTap: () => notifier.openWindow('resume', desktopSize: desktopSize),
                   ),
               ],
             ),

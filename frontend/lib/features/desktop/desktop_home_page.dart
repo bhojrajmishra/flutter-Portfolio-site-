@@ -195,10 +195,7 @@ class _MobileHome extends ConsumerWidget {
                           iconColor: const Color(0xFFEA4335),
                           tileColor: Colors.white,
                           label: 'Resume',
-                          onTap: () => launchUrl(
-                            Uri.parse(resume.url),
-                            webOnlyWindowName: '_blank',
-                          ),
+                          onTap: () => _openFullscreen(context, 'resume'),
                         ),
                       if (apk != null)
                         DesktopIconButton(

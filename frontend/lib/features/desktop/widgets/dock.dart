@@ -41,7 +41,8 @@ class Dock extends ConsumerWidget {
                 iconColor: const Color(0xFFEA4335),
                 tileColor: Colors.white,
                 tooltip: 'Resume',
-                onTap: () => launchUrl(Uri.parse(resume.url), webOnlyWindowName: '_blank'),
+                isOpen: openIds.contains('resume'),
+                onTap: () => notifier.openWindow('resume', desktopSize: desktopSize),
               ),
             if (apk != null) ...[
               const SizedBox(width: 8),

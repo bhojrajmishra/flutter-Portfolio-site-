@@ -8,6 +8,7 @@ import '../window_content/calendar_window_content.dart';
 import '../window_content/contact_window_content.dart';
 import '../window_content/experience_window_content.dart';
 import '../window_content/projects_window_content.dart';
+import '../window_content/resume_window_content.dart';
 import '../window_manager.dart';
 
 /// [desktopSize] is only consumed by content that itself opens another
@@ -17,6 +18,8 @@ Widget buildWindowContent(String id, Size desktopSize) {
   switch (id) {
     case 'about':
       return const AboutWindowContent();
+    case 'resume':
+      return const ResumeWindowContent();
     case 'projects':
       return const ProjectsWindowContent();
     case 'calendar':

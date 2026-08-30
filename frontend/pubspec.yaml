@@ -44,6 +44,7 @@ dependencies:
   font_awesome_flutter: ^11.0.0
   flutter_markdown_plus: ^1.0.12
   geolocator: ^14.0.3
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:

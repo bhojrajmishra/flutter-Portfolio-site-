@@ -13,6 +13,7 @@ class WindowDef {
 
 const windowDefinitions = <String, WindowDef>{
   'about': WindowDef(title: 'About Me', icon: Icons.person_outline, defaultSize: Size(640, 480)),
+  'resume': WindowDef(title: 'Resume', icon: Icons.description_outlined, defaultSize: Size(760, 640)),
   'projects': WindowDef(title: 'Projects', icon: Icons.work_outline, defaultSize: Size(780, 580)),
   'calendar': WindowDef(title: 'Calendar', icon: Icons.calendar_month_rounded, defaultSize: Size(760, 560)),
   'experience':
