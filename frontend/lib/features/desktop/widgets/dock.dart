@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,8 +11,10 @@ import 'calendar_tile.dart';
 
 /// Bottom macOS-style dock: Resume (opens the PDF directly) plus one icon
 /// per window "app", styled with distinct per-app tile colors (like real
-/// app icons), a running-indicator dot under open windows, and a
-/// hover-scale animation.
+/// app icons), a running-indicator dot under open windows, a hover-scale
+/// animation, and a real glassmorphism bar (backdrop blur + translucent
+/// tint + a faint top sheen, like real macOS dock glass) instead of a flat
+/// translucent color.
 class Dock extends ConsumerWidget {
   final Size desktopSize;
   const Dock({super.key, required this.desktopSize});
@@ -24,93 +28,142 @@ class Dock extends ConsumerWidget {
     final openIds = openWindows.map((w) => w.id).toSet();
 
     return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      // Shadow lives on this outer, unclipped box — a clip inside would cut
+      // off the blurred shadow's spread past the bar's rounded edges.
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          color: const Color(0xCC12151F),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.glassBorder),
-          boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 20, offset: Offset(0, 8))],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (resume != null)
-              _DockIcon(
-                icon: Icons.picture_as_pdf_rounded,
-                iconColor: const Color(0xFFEA4335),
-                tileColor: Colors.white,
-                tooltip: 'Resume',
-                isOpen: openIds.contains('resume'),
-                onTap: () => notifier.openWindow('resume', desktopSize: desktopSize),
-              ),
-            if (apk != null) ...[
-              const SizedBox(width: 8),
-              _DockIcon(
-                icon: Icons.android_rounded,
-                iconColor: Colors.white,
-                tileColor: const Color(0xFF3DDC84),
-                tooltip: apk.versionLabel != null ? 'Download App (v${apk.versionLabel})' : 'Download App',
-                onTap: () => launchUrl(Uri.parse(apk.url), webOnlyWindowName: '_blank'),
-              ),
-            ],
-            const SizedBox(width: 8),
-            _DockIcon(
-              icon: Icons.person_rounded,
-              tileGradient: AppColors.accentGradient,
-              tooltip: 'About Me',
-              isOpen: openIds.contains('about'),
-              onTap: () => notifier.openWindow('about', desktopSize: desktopSize),
-            ),
-            const SizedBox(width: 8),
-            _DockIcon(
-              icon: Icons.flutter_dash_rounded,
-              iconColor: const Color(0xFF027DFD),
-              tileColor: Colors.white,
-              tooltip: 'Projects',
-              isOpen: openIds.contains('projects'),
-              onTap: () => notifier.openWindow('projects', desktopSize: desktopSize),
-            ),
-            const SizedBox(width: 8),
-            _DockIcon(
-              tileChild: const CalendarTile(),
-              tileColor: Colors.white,
-              tooltip: 'Calendar',
-              isOpen: openIds.contains('calendar'),
-              onTap: () => notifier.openWindow('calendar', desktopSize: desktopSize),
-            ),
-            const SizedBox(width: 8),
-            _DockIcon(
-              icon: Icons.timeline_outlined,
-              iconColor: Colors.white,
-              tileColor: const Color(0xFFFF9F0A),
-              tooltip: 'Experience',
-              isOpen: openIds.contains('experience'),
-              onTap: () => notifier.openWindow('experience', desktopSize: desktopSize),
-            ),
-            const SizedBox(width: 8),
-            _DockIcon(
-              icon: Icons.chat_bubble_rounded,
-              iconColor: Colors.white,
-              tileColor: const Color(0xFF2ECC71),
-              tooltip: 'Contact',
-              isOpen: openIds.contains('contact'),
-              onTap: () => notifier.openWindow('contact', desktopSize: desktopSize),
-            ),
-            const SizedBox(width: 8),
-            _DockIcon(
-              icon: Icons.explore_rounded,
-              iconColor: Colors.white,
-              tileGradient: const LinearGradient(
-                colors: [Color(0xFF63E2FF), Color(0xFF1E88E5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              tooltip: 'Blog',
-              isOpen: openIds.contains('blog'),
-              onTap: () => notifier.openWindow('blog', desktopSize: desktopSize),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black45,
+              blurRadius: 24,
+              offset: Offset(0, 10),
             ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0x4012151F),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.10),
+                    Colors.transparent,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (resume != null)
+                    _DockIcon(
+                      icon: Icons.picture_as_pdf_rounded,
+                      iconColor: const Color(0xFFEA4335),
+                      tileColor: Colors.white,
+                      tooltip: 'Resume',
+                      isOpen: openIds.contains('resume'),
+                      onTap: () => notifier.openWindow(
+                        'resume',
+                        desktopSize: desktopSize,
+                      ),
+                    ),
+                  if (apk != null) ...[
+                    const SizedBox(width: 8),
+                    _DockIcon(
+                      icon: Icons.android_rounded,
+                      iconColor: Colors.white,
+                      tileColor: const Color(0xFF3DDC84),
+                      tooltip: apk.versionLabel != null
+                          ? 'Download App (v${apk.versionLabel})'
+                          : 'Download App',
+                      onTap: () => launchUrl(
+                        Uri.parse(apk.url),
+                        webOnlyWindowName: '_blank',
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: 8),
+                  _DockIcon(
+                    icon: Icons.person_rounded,
+                    tileGradient: AppColors.accentGradient,
+                    tooltip: 'About Me',
+                    isOpen: openIds.contains('about'),
+                    onTap: () =>
+                        notifier.openWindow('about', desktopSize: desktopSize),
+                  ),
+                  const SizedBox(width: 8),
+                  _DockIcon(
+                    icon: Icons.flutter_dash_rounded,
+                    iconColor: const Color(0xFF027DFD),
+                    tileColor: Colors.white,
+                    tooltip: 'Projects',
+                    isOpen: openIds.contains('projects'),
+                    onTap: () => notifier.openWindow(
+                      'projects',
+                      desktopSize: desktopSize,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _DockIcon(
+                    tileChild: const CalendarTile(),
+                    tileColor: Colors.white,
+                    tooltip: 'Calendar',
+                    isOpen: openIds.contains('calendar'),
+                    onTap: () => notifier.openWindow(
+                      'calendar',
+                      desktopSize: desktopSize,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _DockIcon(
+                    icon: Icons.timeline_outlined,
+                    iconColor: Colors.white,
+                    tileColor: const Color(0xFFFF9F0A),
+                    tooltip: 'Experience',
+                    isOpen: openIds.contains('experience'),
+                    onTap: () => notifier.openWindow(
+                      'experience',
+                      desktopSize: desktopSize,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _DockIcon(
+                    icon: Icons.chat_bubble_rounded,
+                    iconColor: Colors.white,
+                    tileColor: const Color(0xFF2ECC71),
+                    tooltip: 'Contact',
+                    isOpen: openIds.contains('contact'),
+                    onTap: () => notifier.openWindow(
+                      'contact',
+                      desktopSize: desktopSize,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _DockIcon(
+                    icon: Icons.explore_rounded,
+                    iconColor: Colors.white,
+                    tileGradient: const LinearGradient(
+                      colors: [Color(0xFF63E2FF), Color(0xFF1E88E5)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    tooltip: 'Blog',
+                    isOpen: openIds.contains('blog'),
+                    onTap: () =>
+                        notifier.openWindow('blog', desktopSize: desktopSize),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -152,6 +205,25 @@ class _DockIconState extends State<_DockIcon> {
       onExit: (_) => setState(() => _hovering = false),
       child: Tooltip(
         message: widget.tooltip,
+        preferBelow: false,
+        verticalOffset: 42,
+        waitDuration: const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.96),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black38,
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        textStyle: const TextStyle(
+          color: Colors.black87,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
         child: GestureDetector(
           onTap: widget.onTap,
           child: Column(
@@ -166,11 +238,19 @@ class _DockIconState extends State<_DockIcon> {
                   height: 48,
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    color: widget.tileGradient == null ? (widget.tileColor ?? AppColors.surface) : null,
+                    color: widget.tileGradient == null
+                        ? (widget.tileColor ?? AppColors.surface)
+                        : null,
                     gradient: widget.tileGradient,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: widget.tileChild ?? Icon(widget.icon, color: widget.iconColor ?? Colors.white, size: 22),
+                  child:
+                      widget.tileChild ??
+                      Icon(
+                        widget.icon,
+                        color: widget.iconColor ?? Colors.white,
+                        size: 22,
+                      ),
                 ),
               ),
               const SizedBox(height: 4),
@@ -178,7 +258,12 @@ class _DockIconState extends State<_DockIcon> {
                 height: 4,
                 width: 4,
                 child: widget.isOpen
-                    ? const DecoratedBox(decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle))
+                    ? const DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      )
                     : null,
               ),
             ],
