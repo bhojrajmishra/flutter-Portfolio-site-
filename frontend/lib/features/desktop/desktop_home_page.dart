@@ -101,7 +101,6 @@ class _MobileHome extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resume = ref.watch(resumeProvider).value;
-    final apk = ref.watch(apkProvider).value;
     final projects = ref.watch(projectsProvider).value;
     final socialLinks = ref.watch(socialLinksProvider).value ?? [];
     final hero = ref.watch(heroProvider).value;
@@ -185,16 +184,16 @@ class _MobileHome extends ConsumerWidget {
                           label: 'Resume',
                           onTap: () => _openFullscreen(context, 'resume'),
                         ),
-                      if (apk != null)
-                        DesktopIconButton(
-                          icon: Icons.android_rounded,
-                          tileColor: const Color(0xFF3DDC84),
-                          label: 'Download App',
-                          onTap: () => launchUrl(
-                            Uri.parse(apk.url),
-                            webOnlyWindowName: '_blank',
-                          ),
+                      DesktopIconButton(
+                        icon: Icons.storefront_rounded,
+                        tileGradient: const LinearGradient(
+                          colors: [Color(0xFF0A84FF), Color(0xFF0040DD)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
+                        label: 'App Store',
+                        onTap: () => _openFullscreen(context, 'appstore'),
+                      ),
                       for (final link in socialLinks)
                         Builder(builder: (context) {
                           final info = platformIconInfoFor(link.platform);

@@ -14,10 +14,12 @@ interface ApkRow extends RowDataPacket {
   filename: string;
   versionLabel: string | null;
   url: string;
+  sizeBytes: number | null;
   uploadedAt: Date;
 }
 
-const SELECT_COLUMNS = "id, filename, version_label AS versionLabel, url, uploaded_at AS uploadedAt";
+const SELECT_COLUMNS =
+  "id, filename, version_label AS versionLabel, url, size_bytes AS sizeBytes, uploaded_at AS uploadedAt";
 
 router.get(
   "/",
@@ -40,8 +42,8 @@ router.post(
     const versionLabel = versionLabelSchema.parse(req.body.versionLabel) ?? null;
     const url = `${env.publicBaseUrl}/uploads/${req.file.filename}`;
     const [result] = await pool.query<ResultSetHeader>(
-      "INSERT INTO apk_files (filename, version_label, url) VALUES (?, ?, ?)",
-      [req.file.originalname, versionLabel, url]
+      "INSERT INTO apk_files (filename, version_label, url, size_bytes) VALUES (?, ?, ?, ?)",
+      [req.file.originalname, versionLabel, url, req.file.size]
     );
     const [rows] = await pool.query<ApkRow[]>(`SELECT ${SELECT_COLUMNS} FROM apk_files WHERE id = ?`, [
       result.insertId,

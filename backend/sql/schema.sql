@@ -92,6 +92,11 @@ CREATE TABLE IF NOT EXISTS apk_files (
   uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Added after the initial release for the App Store-style listing page
+-- (real file size shown instead of a guess). Safe to re-run against a
+-- table that already has the column.
+ALTER TABLE apk_files ADD COLUMN IF NOT EXISTS size_bytes BIGINT NULL AFTER url;
+
 CREATE TABLE IF NOT EXISTS contact_messages (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,

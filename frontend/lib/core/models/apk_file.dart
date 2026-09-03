@@ -3,6 +3,7 @@ class ApkFile {
   final String filename;
   final String? versionLabel;
   final String url;
+  final int? sizeBytes;
   final DateTime uploadedAt;
 
   const ApkFile({
@@ -10,6 +11,7 @@ class ApkFile {
     required this.filename,
     this.versionLabel,
     required this.url,
+    this.sizeBytes,
     required this.uploadedAt,
   });
 
@@ -18,6 +20,7 @@ class ApkFile {
         filename: json['filename'] as String? ?? 'app.apk',
         versionLabel: json['versionLabel'] as String?,
         url: json['url'] as String? ?? '',
+        sizeBytes: json['sizeBytes'] as int?,
         uploadedAt: DateTime.parse(json['uploadedAt'] as String),
       );
 }

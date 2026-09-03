@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/api/data_providers.dart';
 import '../../../core/theme/app_theme.dart';
@@ -22,7 +21,6 @@ class Dock extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resume = ref.watch(resumeProvider).value;
-    final apk = ref.watch(apkProvider).value;
     final openWindows = ref.watch(windowManagerProvider);
     final notifier = ref.read(windowManagerProvider.notifier);
     final openIds = openWindows.map((w) => w.id).toSet();
@@ -75,21 +73,22 @@ class Dock extends ConsumerWidget {
                         desktopSize: desktopSize,
                       ),
                     ),
-                  if (apk != null) ...[
-                    const SizedBox(width: 8),
-                    _DockIcon(
-                      icon: Icons.android_rounded,
-                      iconColor: Colors.white,
-                      tileColor: const Color(0xFF3DDC84),
-                      tooltip: apk.versionLabel != null
-                          ? 'Download App (v${apk.versionLabel})'
-                          : 'Download App',
-                      onTap: () => launchUrl(
-                        Uri.parse(apk.url),
-                        webOnlyWindowName: '_blank',
-                      ),
+                  const SizedBox(width: 8),
+                  _DockIcon(
+                    icon: Icons.storefront_rounded,
+                    iconColor: Colors.white,
+                    tileGradient: const LinearGradient(
+                      colors: [Color(0xFF0A84FF), Color(0xFF0040DD)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ],
+                    tooltip: 'App Store',
+                    isOpen: openIds.contains('appstore'),
+                    onTap: () => notifier.openWindow(
+                      'appstore',
+                      desktopSize: desktopSize,
+                    ),
+                  ),
                   const SizedBox(width: 8),
                   _DockIcon(
                     icon: Icons.person_rounded,

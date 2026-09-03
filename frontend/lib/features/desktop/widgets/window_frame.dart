@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../window_content/about_window_content.dart';
+import '../window_content/app_store_window_content.dart';
 import '../window_content/blog_window_content.dart';
 import '../window_content/calendar_window_content.dart';
 import '../window_content/contact_window_content.dart';
@@ -30,6 +31,8 @@ Widget buildWindowContent(String id, Size desktopSize) {
       return const ContactWindowContent();
     case 'blog':
       return const BlogWindowContent();
+    case 'appstore':
+      return const AppStoreWindowContent();
     default:
       return const SizedBox.shrink();
   }
