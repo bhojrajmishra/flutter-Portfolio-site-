@@ -2,67 +2,75 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 
-/// Abstract flowing-gradient "wallpaper" behind the desktop — inspired by
-/// the soft ribbon-style wallpapers common on modern desktop OSes, painted
-/// from scratch (not a copy of any specific OS's actual wallpaper asset).
-class DesktopBackground extends StatelessWidget {
+/// Ambient "motion wallpaper" behind the desktop — a high-resolution photo
+/// that slowly zooms and pans (a subtle Ken-Burns effect, the same trick
+/// behind macOS's dynamic wallpapers) instead of a static image. A dark
+/// scrim sits on top so window chrome, dock icons, and text stay legible
+/// over whatever part of the photo is showing.
+class DesktopBackground extends StatefulWidget {
   const DesktopBackground({super.key});
+
+  @override
+  State<DesktopBackground> createState() => _DesktopBackgroundState();
+}
+
+class _DesktopBackgroundState extends State<DesktopBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 26))
+      ..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.background,
-      child: CustomPaint(
-        painter: _RibbonPainter(),
-        child: const SizedBox.expand(),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final t = Curves.easeInOut.transform(_controller.value);
+              return Transform.scale(
+                scale: 1.08 + 0.07 * t,
+                alignment: Alignment(-0.2 + 0.4 * t, -0.15 + 0.1 * t),
+                child: child,
+              );
+            },
+            child: Image.asset(
+              'assets/images/desktop_bg.jpg',
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
+          // Scrim so windows/dock/text stay legible over the photo.
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppColors.background.withValues(alpha: 0.55),
+                  AppColors.background.withValues(alpha: 0.35),
+                  AppColors.background.withValues(alpha: 0.65),
+                ],
+                stops: const [0.0, 0.5, 1.0],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
-}
-
-class _RibbonPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    void ribbon(Path path, List<Color> colors, double opacity, double strokeWidth) {
-      final fadedColors = colors.map((c) => c.withValues(alpha: opacity)).toList();
-      final paint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.round
-        ..shader = LinearGradient(colors: fadedColors).createShader(Rect.fromLTWH(0, 0, w, h))
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 40);
-      canvas.drawPath(path, paint);
-    }
-
-    Path curve(double y0, double c1y, double c2y, double y1) {
-      return Path()
-        ..moveTo(-w * 0.2, h * y0)
-        ..cubicTo(w * 0.25, h * c1y, w * 0.55, h * c2y, w * 1.2, h * y1);
-    }
-
-    ribbon(
-      curve(0.15, 0.55, -0.05, 0.65),
-      [AppColors.accentStart, AppColors.accentEnd],
-      0.10,
-      160,
-    );
-    ribbon(
-      curve(0.55, 0.15, 0.85, 0.35),
-      [AppColors.accentEnd, AppColors.accentStart],
-      0.08,
-      140,
-    );
-    ribbon(
-      curve(0.85, 1.05, 0.55, 1.15),
-      [AppColors.accentStart, AppColors.accentEnd],
-      0.07,
-      180,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

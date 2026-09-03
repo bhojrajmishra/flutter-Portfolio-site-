@@ -10,7 +10,6 @@ import 'widgets/calendar_tile.dart';
 import 'widgets/desktop_background.dart';
 import 'widgets/desktop_icon.dart';
 import 'widgets/desktop_icons_column.dart';
-import 'widgets/desktop_widget_stack.dart';
 import 'widgets/dock.dart';
 import 'widgets/menu_bar.dart';
 import 'widgets/weather_widget.dart';
@@ -64,17 +63,6 @@ class _Desktop extends ConsumerWidget {
           right: 8,
           bottom: 110,
           child: DesktopIconsColumn(desktopSize: desktopSize),
-        ),
-        Positioned(
-          top: 90,
-          left: 0,
-          right: 0,
-          bottom: 150,
-          child: Center(
-            child: SingleChildScrollView(
-              child: DesktopWidgetStack(desktopSize: desktopSize),
-            ),
-          ),
         ),
         for (final w in visible)
           WindowFrame(window: w, desktopSize: desktopSize),
