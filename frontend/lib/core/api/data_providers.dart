@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/about_content.dart';
-import '../models/apk_file.dart';
+import '../models/app_listing.dart';
 import '../models/blog_post.dart';
 import '../models/contact_message.dart';
 import '../models/education.dart';
@@ -60,8 +60,8 @@ final blogPostsProvider = FutureProvider<List<BlogPost>>((ref) {
   return ref.watch(portfolioRepositoryProvider).getBlogPosts();
 });
 
-final apkProvider = FutureProvider<ApkFile?>((ref) {
-  return ref.watch(portfolioRepositoryProvider).getApk();
+final appsProvider = FutureProvider<List<AppListing>>((ref) {
+  return ref.watch(portfolioRepositoryProvider).getApps();
 });
 
 final geolocationRepositoryProvider = Provider<GeolocationRepository>((ref) => GeolocationRepository());
@@ -90,5 +90,5 @@ void invalidateAllContent(WidgetRef ref) {
   ref.invalidate(socialLinksProvider);
   ref.invalidate(resumeProvider);
   ref.invalidate(blogPostsProvider);
-  ref.invalidate(apkProvider);
+  ref.invalidate(appsProvider);
 }

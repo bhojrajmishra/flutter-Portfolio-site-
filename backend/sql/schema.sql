@@ -82,8 +82,9 @@ CREATE TABLE IF NOT EXISTS resume_files (
   uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Same "only the latest row is current" pattern as resume_files — the
--- downloadable Android app build.
+-- Superseded by `apps` below (multiple listings instead of a single
+-- "latest wins" row). Left in place, unused, rather than dropped —
+-- nothing ever wrote a row that mattered here in production.
 CREATE TABLE IF NOT EXISTS apk_files (
   id INT AUTO_INCREMENT PRIMARY KEY,
   filename VARCHAR(255) NOT NULL,
@@ -92,10 +93,22 @@ CREATE TABLE IF NOT EXISTS apk_files (
   uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Added after the initial release for the App Store-style listing page
--- (real file size shown instead of a guess). Safe to re-run against a
--- table that already has the column.
-ALTER TABLE apk_files ADD COLUMN IF NOT EXISTS size_bytes BIGINT NULL AFTER url;
+-- The App Store-style listing page: every row is a published app (not
+-- just the latest one). `category` is validated against a fixed list on
+-- the backend — keep APP_CATEGORIES in sync between
+-- backend/src/routes/apps.ts and frontend/lib/core/models/app_listing.dart
+-- if it ever changes.
+CREATE TABLE IF NOT EXISTS apps (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  category VARCHAR(50) NOT NULL DEFAULT 'Other',
+  description TEXT NULL,
+  version_label VARCHAR(50) NULL,
+  filename VARCHAR(255) NOT NULL,
+  url TEXT NOT NULL,
+  size_bytes BIGINT NULL,
+  uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE TABLE IF NOT EXISTS contact_messages (
   id INT AUTO_INCREMENT PRIMARY KEY,

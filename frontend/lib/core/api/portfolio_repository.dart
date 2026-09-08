@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/about_content.dart';
-import '../models/apk_file.dart';
+import '../models/app_listing.dart';
 import '../models/blog_post.dart';
 import '../models/contact_message.dart';
 import '../models/education.dart';
@@ -149,21 +149,32 @@ class PortfolioRepository {
 
   Future<void> deleteBlogPost(int id) => _dio.delete('/blog/$id');
 
-  // ---- Android app (APK) ----
-  Future<ApkFile?> getApk() async {
-    final res = await _dio.get('/apk');
-    if (res.data == null) return null;
-    return ApkFile.fromJson(res.data as Map<String, dynamic>);
+  // ---- App Store ----
+  Future<List<AppListing>> getApps() async {
+    final res = await _dio.get('/apps');
+    return (res.data as List).map((e) => AppListing.fromJson(e)).toList();
   }
 
-  Future<ApkFile> uploadApk(List<int> bytes, String filename, {String? versionLabel}) async {
+  Future<AppListing> createApp(
+    List<int> bytes,
+    String filename, {
+    required String name,
+    required String category,
+    String? description,
+    String? versionLabel,
+  }) async {
     final formData = FormData.fromMap({
       'file': MultipartFile.fromBytes(bytes, filename: filename),
+      'name': name,
+      'category': category,
+      if (description != null && description.isNotEmpty) 'description': description,
       if (versionLabel != null && versionLabel.isNotEmpty) 'versionLabel': versionLabel,
     });
-    final res = await _dio.post('/apk', data: formData);
-    return ApkFile.fromJson(res.data as Map<String, dynamic>);
+    final res = await _dio.post('/apps', data: formData);
+    return AppListing.fromJson(res.data as Map<String, dynamic>);
   }
+
+  Future<void> deleteApp(int id) => _dio.delete('/apps/$id');
 }
 
 final portfolioRepositoryProvider = Provider<PortfolioRepository>((ref) {

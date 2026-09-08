@@ -57,7 +57,7 @@ export const uploadResume = multer({
 // type and the generic fallback some upload from actually sends.
 const APK_TYPES = new Set(["application/vnd.android.package-archive", "application/octet-stream"]);
 
-export const uploadApk = multer({
+export const uploadApp = multer({
   storage,
   // Keep this modest — shared hosting disk quota here is small (~200MB
   // total for the whole account). A large APK eats it fast.

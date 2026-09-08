@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/admin/auth/login_page.dart';
 import '../../features/admin/dashboard/admin_shell.dart';
 import '../../features/admin/dashboard/pages/about_admin_page.dart';
-import '../../features/admin/dashboard/pages/apk_admin_page.dart';
+import '../../features/admin/dashboard/pages/app_store_admin_page.dart';
 import '../../features/admin/dashboard/pages/blog_admin_page.dart';
 import '../../features/admin/dashboard/pages/blog_post_editor_page.dart';
 import '../../features/admin/dashboard/pages/contact_admin_page.dart';
@@ -64,7 +64,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               builder: (context, state) => const SocialLinksAdminPage()),
           GoRoute(path: '/admin/resume', builder: (context, state) => const ResumeAdminPage()),
           GoRoute(path: '/admin/contact', builder: (context, state) => const ContactAdminPage()),
-          GoRoute(path: '/admin/apk', builder: (context, state) => const ApkAdminPage()),
+          GoRoute(path: '/admin/apps', builder: (context, state) => const AppStoreAdminPage()),
           GoRoute(path: '/admin/blog', builder: (context, state) => const BlogAdminPage()),
           GoRoute(path: '/admin/blog/new', builder: (context, state) => const BlogPostEditorPage()),
           GoRoute(

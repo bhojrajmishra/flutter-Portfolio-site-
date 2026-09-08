@@ -6,7 +6,7 @@ import { UPLOADS_DIR } from "./lib/upload";
 import { errorHandler } from "./middleware/errorHandler";
 
 import aboutRouter from "./routes/about";
-import apkRouter from "./routes/apk";
+import appsRouter from "./routes/apps";
 import authRouter from "./routes/auth";
 import blogRouter from "./routes/blog";
 import contactRouter from "./routes/contact";
@@ -36,7 +36,7 @@ app.use("/uploads", express.static(UPLOADS_DIR));
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 app.use("/api/auth", authRouter);
-app.use("/api/apk", apkRouter);
+app.use("/api/apps", appsRouter);
 app.use("/api/blog", blogRouter);
 app.use("/api/hero", heroRouter);
 app.use("/api/about", aboutRouter);
