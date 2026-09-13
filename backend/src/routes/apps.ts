@@ -67,23 +67,32 @@ router.post(
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded (expected field name 'file')" });
     }
-    const data = createSchema.parse(req.body);
-    const url = `${env.publicBaseUrl}/uploads/${req.file.filename}`;
-    const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO apps (name, category, description, version_label, filename, url, size_bytes)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        data.name,
-        data.category,
-        data.description ?? null,
-        data.versionLabel ?? null,
-        req.file.originalname,
-        url,
-        req.file.size,
-      ]
-    );
-    const [rows] = await pool.query<AppRow[]>(`SELECT ${SELECT_COLUMNS} FROM apps WHERE id = ?`, [result.insertId]);
-    res.status(201).json(rows[0]);
+    // Multer already wrote the file to disk by this point. If anything
+    // below fails (bad category, DB hiccup), clean it up rather than
+    // leaving an orphaned file burning disk quota — that's exactly what
+    // silently ate this account's quota and broke every upload after it.
+    try {
+      const data = createSchema.parse(req.body);
+      const url = `${env.publicBaseUrl}/uploads/${req.file.filename}`;
+      const [result] = await pool.query<ResultSetHeader>(
+        `INSERT INTO apps (name, category, description, version_label, filename, url, size_bytes)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          data.name,
+          data.category,
+          data.description ?? null,
+          data.versionLabel ?? null,
+          req.file.originalname,
+          url,
+          req.file.size,
+        ]
+      );
+      const [rows] = await pool.query<AppRow[]>(`SELECT ${SELECT_COLUMNS} FROM apps WHERE id = ?`, [result.insertId]);
+      res.status(201).json(rows[0]);
+    } catch (err) {
+      fs.unlink(req.file.path, () => {});
+      throw err;
+    }
   })
 );
 
