@@ -117,19 +117,38 @@ class AppStoreAdminPage extends ConsumerWidget {
 
     if (saved != true || picked == null) return;
 
-    try {
-      await ref.read(portfolioRepositoryProvider).createApp(
-            picked!.bytes,
-            picked!.name,
-            name: nameController.text.trim(),
-            category: category,
-            description: descriptionController.text.trim(),
-            versionLabel: versionController.text.trim(),
-          );
-      ref.invalidate(appsProvider);
-      if (context.mounted) showSnack(context, 'App published.');
-    } catch (e) {
-      if (context.mounted) showSnack(context, 'Upload failed: ${_describeUploadError(e)}', isError: true);
+    // Large APKs on a slow/unstable connection can have the upload
+    // connection drop mid-transfer (confirmed against production: identical
+    // uploads succeed fine over a stable connection, so this is real-world
+    // network flakiness, not a server bug) — retry a couple of times before
+    // giving up, since a second attempt often just goes through.
+    const maxAttempts = 3;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        await ref.read(portfolioRepositoryProvider).createApp(
+              picked!.bytes,
+              picked!.name,
+              name: nameController.text.trim(),
+              category: category,
+              description: descriptionController.text.trim(),
+              versionLabel: versionController.text.trim(),
+            );
+        ref.invalidate(appsProvider);
+        if (context.mounted) showSnack(context, 'App published.');
+        return;
+      } catch (e) {
+        final isConnectionError =
+            e is DioException && (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.unknown);
+        if (isConnectionError && attempt < maxAttempts) {
+          if (context.mounted) {
+            showSnack(context, 'Upload interrupted, retrying ($attempt/$maxAttempts)...');
+          }
+          await Future.delayed(const Duration(seconds: 2));
+          continue;
+        }
+        if (context.mounted) showSnack(context, 'Upload failed: ${_describeUploadError(e)}', isError: true);
+        return;
+      }
     }
   }
 
