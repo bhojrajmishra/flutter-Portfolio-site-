@@ -71,6 +71,17 @@ router.post(
     // below fails (bad category, DB hiccup), clean it up rather than
     // leaving an orphaned file burning disk quota — that's exactly what
     // silently ate this account's quota and broke every upload after it.
+    //
+    // A large APK on a slow connection can also have its connection dropped
+    // by the client/network *after* the file finished writing but before we
+    // respond — nothing throws in that case (the DB insert below still runs
+    // fine), so the try/catch alone doesn't cover it. Watch for the request
+    // socket closing before we've actually sent a response, and clean up
+    // then too.
+    let responded = false;
+    req.on("close", () => {
+      if (!responded) fs.unlink(req.file!.path, () => {});
+    });
     try {
       const data = createSchema.parse(req.body);
       const url = `${env.publicBaseUrl}/uploads/${req.file.filename}`;
@@ -88,8 +99,10 @@ router.post(
         ]
       );
       const [rows] = await pool.query<AppRow[]>(`SELECT ${SELECT_COLUMNS} FROM apps WHERE id = ?`, [result.insertId]);
+      responded = true;
       res.status(201).json(rows[0]);
     } catch (err) {
+      responded = true;
       fs.unlink(req.file.path, () => {});
       throw err;
     }

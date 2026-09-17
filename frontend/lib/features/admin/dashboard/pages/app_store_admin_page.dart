@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -128,8 +129,22 @@ class AppStoreAdminPage extends ConsumerWidget {
       ref.invalidate(appsProvider);
       if (context.mounted) showSnack(context, 'App published.');
     } catch (e) {
-      if (context.mounted) showSnack(context, 'Upload failed: $e', isError: true);
+      if (context.mounted) showSnack(context, 'Upload failed: ${_describeUploadError(e)}', isError: true);
     }
+  }
+
+  /// Dio reports a dropped connection (e.g. a large APK cut off mid-upload
+  /// by a slow/unstable connection) the same way it reports an actual CORS
+  /// block — a generic "connection error" — so the raw exception text is
+  /// misleading here. Give the admin the likely real explanation instead.
+  String _describeUploadError(Object e) {
+    if (e is DioException &&
+        (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.unknown)) {
+      return 'the connection was interrupted while sending the file. This usually means '
+          'the APK is large and the connection is slow or unstable — try again on a '
+          'faster/more stable connection, or use a smaller APK.';
+    }
+    return '$e';
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref, AppListing app) async {
