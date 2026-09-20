@@ -12,6 +12,7 @@ import 'widgets/desktop_icon.dart';
 import 'widgets/desktop_icons_column.dart';
 import 'widgets/dock.dart';
 import 'widgets/menu_bar.dart';
+import 'widgets/mobile_tip_notification.dart';
 import 'widgets/weather_widget.dart';
 import 'widgets/window_frame.dart';
 import 'window_manager.dart';
@@ -82,6 +83,11 @@ class _Desktop extends ConsumerWidget {
           right: 0,
           bottom: 16,
           child: Dock(desktopSize: desktopSize),
+        ),
+        const Positioned(
+          left: 24,
+          bottom: 24,
+          child: MobileTipNotification(),
         ),
       ],
     );
