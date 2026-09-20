@@ -71,6 +71,10 @@ class DesktopWindow {
 const _minWindowSize = Size(320, 240);
 const _cascadeStep = 32.0;
 const _edgeMargin = 16.0;
+// Space reserved at the bottom of the desktop for the floating dock (see
+// desktop_home_page.dart's `bottom: 110` clearance for the icon column) so a
+// maximized window's content doesn't scroll underneath it.
+const _dockClearance = 110.0;
 
 class WindowManagerNotifier extends Notifier<List<DesktopWindow>> {
   int _zCounter = 0;
@@ -177,7 +181,10 @@ class WindowManagerNotifier extends Notifier<List<DesktopWindow>> {
               : w.copyWith(
                   preMaximizeBounds: Rect.fromLTWH(w.position.dx, w.position.dy, w.size.width, w.size.height),
                   position: const Offset(_edgeMargin, _edgeMargin),
-                  size: Size(desktopSize.width - _edgeMargin * 2, desktopSize.height - _edgeMargin * 2),
+                  size: Size(
+                    desktopSize.width - _edgeMargin * 2,
+                    desktopSize.height - _edgeMargin - _dockClearance,
+                  ),
                 )
         else
           w,

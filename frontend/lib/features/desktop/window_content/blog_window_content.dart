@@ -9,10 +9,10 @@ import '../../../core/theme/app_theme.dart';
 
 final _dateFormat = DateFormat('MMMM d, yyyy');
 
-/// The "Blog" window: a lightweight browser-style chrome (address bar +
-/// back button) around a modern card list of posts, and a Markdown-rendered
-/// detail view. Only published posts are shown here — the admin panel
-/// shows drafts too.
+/// The "Blog" window: a modern card list of posts and a clean, minimalist
+/// Markdown-rendered reading view — no browser-style chrome (no fake
+/// address bar), so nothing competes with the content. Only published
+/// posts are shown here — the admin panel shows drafts too.
 class BlogWindowContent extends ConsumerStatefulWidget {
   const BlogWindowContent({super.key});
 
@@ -27,84 +27,19 @@ class _BlogWindowContentState extends ConsumerState<BlogWindowContent> {
   Widget build(BuildContext context) {
     final postsAsync = ref.watch(blogPostsProvider);
 
-    return Column(
-      children: [
-        _AddressBar(
-          path: _selected == null ? '/blog' : '/blog/${_selected!.slug}',
-          showBack: _selected != null,
-          onBack: () => setState(() => _selected = null),
-        ),
-        Expanded(
-          child: postsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, st) => Center(child: Text('Failed to load: $e')),
-            data: (posts) {
-              final published = posts.where((p) => p.isPublished).toList();
-              if (_selected != null) {
-                return _PostDetail(post: _selected!);
-              }
-              return _PostList(
-                posts: published,
-                onOpen: (post) => setState(() => _selected = post),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AddressBar extends StatelessWidget {
-  final String path;
-  final bool showBack;
-  final VoidCallback onBack;
-  const _AddressBar({required this.path, required this.showBack, required this.onBack});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(bottom: BorderSide(color: AppColors.glassBorder)),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            iconSize: 18,
-            visualDensity: VisualDensity.compact,
-            onPressed: showBack ? onBack : null,
-            icon: const Icon(Icons.arrow_back),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Container(
-              height: 28,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: AppColors.glassFill,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.glassBorder),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.lock, size: 12, color: AppColors.textSecondary),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'bhojrajmishra.com.np$path',
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    return postsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, st) => Center(child: Text('Failed to load: $e')),
+      data: (posts) {
+        final published = posts.where((p) => p.isPublished).toList();
+        if (_selected != null) {
+          return _PostDetail(post: _selected!, onBack: () => setState(() => _selected = null));
+        }
+        return _PostList(
+          posts: published,
+          onOpen: (post) => setState(() => _selected = post),
+        );
+      },
     );
   }
 }
@@ -134,7 +69,7 @@ class _PostList extends StatelessWidget {
         final width = constraints.maxWidth;
         final columns = width > 1100 ? 3 : (width > 680 ? 2 : 1);
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -300,6 +235,46 @@ class _PostCardState extends State<_PostCard> {
   }
 }
 
+class _BackLink extends StatefulWidget {
+  final VoidCallback onTap;
+  const _BackLink({required this.onTap});
+
+  @override
+  State<_BackLink> createState() => _BackLinkState();
+}
+
+class _BackLinkState extends State<_BackLink> {
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.arrow_back, size: 15, color: _hovering ? Colors.white : AppColors.textSecondary),
+            const SizedBox(width: 6),
+            Text(
+              'Blog',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _hovering ? Colors.white : AppColors.textSecondary,
+                decoration: _hovering ? TextDecoration.underline : TextDecoration.none,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _Pill extends StatelessWidget {
   final String text;
   const _Pill({required this.text});
@@ -323,18 +298,21 @@ class _Pill extends StatelessWidget {
 
 class _PostDetail extends StatelessWidget {
   final BlogPost post;
-  const _PostDetail({required this.post});
+  final VoidCallback onBack;
+  const _PostDetail({required this.post, required this.onBack});
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _BackLink(onTap: onBack),
+              const SizedBox(height: 20),
               Text(
                 'ARTICLE',
                 style: TextStyle(
