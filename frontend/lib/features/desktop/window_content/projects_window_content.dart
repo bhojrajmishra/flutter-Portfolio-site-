@@ -453,7 +453,6 @@ class _FeaturedBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final link = (project.liveUrl?.isNotEmpty ?? false) ? project.liveUrl : project.repoUrl;
     final hasImage = project.imageUrl != null && project.imageUrl!.isNotEmpty;
 
     final image = Stack(
@@ -494,29 +493,163 @@ class _FeaturedBanner extends StatelessWidget {
           style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.6),
         ),
         const SizedBox(height: 20),
-        if (link != null && link.isNotEmpty) _SeeButton(label: 'See more', onTap: () => _openLink(link)),
+        _SeeButton(label: 'See more', onTap: () => _showProjectDetail(context, project)),
       ],
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 560) {
-          return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [image, const SizedBox(height: 24), text]);
-        }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(flex: 5, child: text),
-            const SizedBox(width: 32),
-            Expanded(flex: 6, child: image),
-          ],
-        );
-      },
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => _showProjectDetail(context, project),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 560) {
+              return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start, children: [image, const SizedBox(height: 24), text]);
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(flex: 5, child: text),
+                const SizedBox(width: 32),
+                Expanded(flex: 6, child: image),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }
 
 void _openLink(String url) => launchUrl(Uri.parse(url), webOnlyWindowName: '_blank');
+
+/// Opens a dialog with the project's full admin-entered description (never
+/// truncated here, unlike the Featured/grid previews) plus links out to the
+/// live site / source repo if the admin set them.
+void _showProjectDetail(BuildContext context, Project project) {
+  showDialog<void>(
+    context: context,
+    barrierColor: Colors.black54,
+    builder: (context) => _ProjectDetailDialog(project: project),
+  );
+}
+
+class _ProjectDetailDialog extends StatelessWidget {
+  final Project project;
+  const _ProjectDetailDialog({required this.project});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImage = project.imageUrl != null && project.imageUrl!.isNotEmpty;
+    final hasLive = project.liveUrl != null && project.liveUrl!.isNotEmpty;
+    final hasRepo = project.repoUrl != null && project.repoUrl!.isNotEmpty && project.repoUrl != project.liveUrl;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520, maxHeight: 640),
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.glassBorder),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (hasImage)
+                  AspectRatio(
+                    aspectRatio: 16 / 8,
+                    child: Image.network(
+                      project.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stack) =>
+                          const DecoratedBox(decoration: BoxDecoration(gradient: AppColors.accentGradient)),
+                    ),
+                  ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _ProjectLogo(project: project, size: 48),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(project.title,
+                                      style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: Colors.white)),
+                                  if (project.category != null && project.category!.isNotEmpty)
+                                    Text(project.category!,
+                                        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          project.description,
+                          style: const TextStyle(fontSize: 14.5, color: AppColors.textSecondary, height: 1.7),
+                        ),
+                        if (project.techTags.isNotEmpty) ...[
+                          const SizedBox(height: 18),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: project.techTags
+                                .map((t) => Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.glassFill,
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(color: AppColors.glassBorder),
+                                      ),
+                                      child: Text(t, style: const TextStyle(fontSize: 11.5, color: AppColors.accentEnd)),
+                                    ))
+                                .toList(),
+                          ),
+                        ],
+                        if (hasLive || hasRepo) ...[
+                          const SizedBox(height: 22),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: [
+                              if (hasLive) _SeeButton(label: 'Visit Live Site', onTap: () => _openLink(project.liveUrl!)),
+                              if (hasRepo)
+                                _SeeButton(label: 'View Source', onTap: () => _openLink(project.repoUrl!), filled: false),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// A pill button — solid blue with white text (the "See more" style used on
 /// the Featured card) or, via [filled]: false, a white pill with blue text
@@ -562,13 +695,12 @@ class _ProjectListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final link = (project.liveUrl?.isNotEmpty ?? false) ? project.liveUrl : project.repoUrl;
     final hasImage = project.imageUrl != null && project.imageUrl!.isNotEmpty;
 
     return MouseRegion(
-      cursor: (link != null && link.isNotEmpty) ? SystemMouseCursors.click : MouseCursor.defer,
+      cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: (link != null && link.isNotEmpty) ? () => _openLink(link) : null,
+        onTap: () => _showProjectDetail(context, project),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -594,7 +726,7 @@ class _ProjectListTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                if (link != null && link.isNotEmpty) _SeeButton(label: 'See', onTap: () => _openLink(link), filled: false),
+                _SeeButton(label: 'See', onTap: () => _showProjectDetail(context, project), filled: false),
               ],
             ),
             const SizedBox(height: 12),
