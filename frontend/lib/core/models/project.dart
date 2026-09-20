@@ -3,6 +3,8 @@ class Project {
   final String title;
   final String description;
   final String? imageUrl;
+  final String? logoUrl;
+  final String? category;
   final List<String> techTags;
   final String? liveUrl;
   final String? repoUrl;
@@ -14,6 +16,8 @@ class Project {
     required this.title,
     required this.description,
     this.imageUrl,
+    this.logoUrl,
+    this.category,
     required this.techTags,
     this.liveUrl,
     this.repoUrl,
@@ -26,6 +30,8 @@ class Project {
         title: json['title'] as String? ?? '',
         description: json['description'] as String? ?? '',
         imageUrl: json['imageUrl'] as String?,
+        logoUrl: json['logoUrl'] as String?,
+        category: json['category'] as String?,
         techTags: (json['techTags'] as List<dynamic>? ?? [])
             .map((e) => e.toString())
             .toList(),
@@ -39,6 +45,8 @@ class Project {
         'title': title,
         'description': description,
         'imageUrl': imageUrl,
+        'logoUrl': logoUrl,
+        'category': category,
         'techTags': techTags,
         'liveUrl': liveUrl,
         'repoUrl': repoUrl,

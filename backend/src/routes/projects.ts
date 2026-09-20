@@ -12,6 +12,8 @@ interface ProjectRow extends RowDataPacket {
   title: string;
   description: string;
   imageUrl: string | null;
+  logoUrl: string | null;
+  category: string | null;
   techTags: string;
   liveUrl: string | null;
   repoUrl: string | null;
@@ -20,8 +22,9 @@ interface ProjectRow extends RowDataPacket {
   createdAt: Date;
 }
 
-const SELECT_COLUMNS = `id, title, description, image_url AS imageUrl, tech_tags AS techTags,
-  live_url AS liveUrl, repo_url AS repoUrl, featured, sort_order AS sortOrder, created_at AS createdAt`;
+const SELECT_COLUMNS = `id, title, description, image_url AS imageUrl, logo_url AS logoUrl, category,
+  tech_tags AS techTags, live_url AS liveUrl, repo_url AS repoUrl, featured, sort_order AS sortOrder,
+  created_at AS createdAt`;
 
 function serialize(row: ProjectRow) {
   return { ...row, techTags: JSON.parse(row.techTags || "[]"), featured: Boolean(row.featured) };
@@ -39,6 +42,8 @@ const projectSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
   imageUrl: z.string().url().optional().nullable(),
+  logoUrl: z.string().url().optional().nullable(),
+  category: z.string().max(100).optional().nullable(),
   techTags: z.array(z.string()).default([]),
   liveUrl: z.string().url().optional().nullable(),
   repoUrl: z.string().url().optional().nullable(),
@@ -52,12 +57,14 @@ router.post(
   asyncHandler(async (req, res) => {
     const data = projectSchema.parse(req.body);
     const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO projects (title, description, image_url, tech_tags, live_url, repo_url, featured, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO projects (title, description, image_url, logo_url, category, tech_tags, live_url, repo_url, featured, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.title,
         data.description,
         data.imageUrl ?? null,
+        data.logoUrl ?? null,
+        data.category ?? null,
         JSON.stringify(data.techTags),
         data.liveUrl ?? null,
         data.repoUrl ?? null,
@@ -83,6 +90,8 @@ router.put(
     if (data.title !== undefined) columnMap.title = ["title = ?", data.title];
     if (data.description !== undefined) columnMap.description = ["description = ?", data.description];
     if (data.imageUrl !== undefined) columnMap.imageUrl = ["image_url = ?", data.imageUrl];
+    if (data.logoUrl !== undefined) columnMap.logoUrl = ["logo_url = ?", data.logoUrl];
+    if (data.category !== undefined) columnMap.category = ["category = ?", data.category];
     if (data.techTags !== undefined) columnMap.techTags = ["tech_tags = ?", JSON.stringify(data.techTags)];
     if (data.liveUrl !== undefined) columnMap.liveUrl = ["live_url = ?", data.liveUrl];
     if (data.repoUrl !== undefined) columnMap.repoUrl = ["repo_url = ?", data.repoUrl];

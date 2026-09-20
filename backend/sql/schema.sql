@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS projects (
   title VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
   image_url TEXT NULL,
+  logo_url TEXT NULL, -- small square app/project icon, separate from the banner image_url
+  category VARCHAR(100) NULL, -- short display label, e.g. "Sports", "Lifestyle" (distinct from the Mobile/Web tech-tag filter buckets)
   tech_tags TEXT NOT NULL, -- JSON-encoded string array
   live_url TEXT NULL,
   repo_url TEXT NULL,

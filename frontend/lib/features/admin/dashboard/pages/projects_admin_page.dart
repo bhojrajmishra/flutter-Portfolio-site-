@@ -18,12 +18,15 @@ class ProjectsAdminPage extends ConsumerWidget {
   Future<void> _openForm(BuildContext context, WidgetRef ref, {Project? existing}) async {
     final titleController = TextEditingController(text: existing?.title ?? '');
     final descriptionController = TextEditingController(text: existing?.description ?? '');
+    final categoryController = TextEditingController(text: existing?.category ?? '');
     final tagsController = TextEditingController(text: existing?.techTags.join(', ') ?? '');
     final liveUrlController = TextEditingController(text: existing?.liveUrl ?? '');
     final repoUrlController = TextEditingController(text: existing?.repoUrl ?? '');
     String? imageUrl = existing?.imageUrl;
+    String? logoUrl = existing?.logoUrl;
     bool featured = existing?.featured ?? false;
     bool uploading = false;
+    bool uploadingLogo = false;
     final formKey = GlobalKey<FormState>();
 
     final saved = await showDialog<bool>(
@@ -50,6 +53,12 @@ class ProjectsAdminPage extends ConsumerWidget {
                       decoration: const InputDecoration(labelText: 'Description'),
                       maxLines: 3,
                       validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: categoryController,
+                      decoration: const InputDecoration(
+                          labelText: 'Category (short label shown under the title, e.g. Sports, Lifestyle)'),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -104,6 +113,53 @@ class ProjectsAdminPage extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
+                    Text(
+                      'Large banner/screenshot shown in the Featured card and behind each project row.',
+                      style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: uploadingLogo
+                              ? null
+                              : () async {
+                                  final picked = await pickFileBytes(type: FileType.image);
+                                  if (picked == null) return;
+                                  setDialogState(() => uploadingLogo = true);
+                                  try {
+                                    final url = await ref
+                                        .read(portfolioRepositoryProvider)
+                                        .uploadImage(picked.bytes, picked.name);
+                                    setDialogState(() {
+                                      logoUrl = url;
+                                      uploadingLogo = false;
+                                    });
+                                  } catch (e) {
+                                    setDialogState(() => uploadingLogo = false);
+                                    if (context.mounted) {
+                                      showSnack(context, 'Upload failed: $e', isError: true);
+                                    }
+                                  }
+                                },
+                          icon: uploadingLogo
+                              ? const SizedBox(
+                                  width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.apps_outlined),
+                          label: const Text('Icon / Logo'),
+                        ),
+                        const SizedBox(width: 12),
+                        if (logoUrl != null)
+                          Expanded(child: Text(logoUrl!, overflow: TextOverflow.ellipsis, maxLines: 1)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Small square app icon. Ideally a square image (e.g. 256×256) — shown as the badge '
+                      'on the Featured card and next to each project title. Falls back to a generic icon if left empty.',
+                      style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 8),
                     CheckboxListTile(
                       contentPadding: EdgeInsets.zero,
                       value: featured,
@@ -143,6 +199,8 @@ class ProjectsAdminPage extends ConsumerWidget {
       title: titleController.text.trim(),
       description: descriptionController.text.trim(),
       imageUrl: imageUrl,
+      logoUrl: logoUrl,
+      category: categoryController.text.trim().isEmpty ? null : categoryController.text.trim(),
       techTags: tags,
       liveUrl: liveUrlController.text.trim().isEmpty ? null : liveUrlController.text.trim(),
       repoUrl: repoUrlController.text.trim().isEmpty ? null : repoUrlController.text.trim(),
@@ -199,6 +257,11 @@ class ProjectsAdminPage extends ConsumerWidget {
                                   Row(
                                     children: [
                                       Text(p.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      if (p.category != null && p.category!.isNotEmpty) ...[
+                                        const SizedBox(width: 8),
+                                        Text('· ${p.category}',
+                                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                                      ],
                                       if (p.featured) ...[
                                         const SizedBox(width: 8),
                                         const Icon(Icons.star, size: 16, color: AppColors.accentEnd),

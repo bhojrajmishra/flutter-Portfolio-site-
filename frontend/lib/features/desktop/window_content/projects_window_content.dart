@@ -10,11 +10,13 @@ import '../../../core/widgets/app_loading_indicator.dart';
 enum _Category { all, popular, mobile, web }
 
 const _categoryDefs = <(_Category, String, IconData)>[
-  (_Category.all, 'All Projects', Icons.grid_view_rounded),
+  (_Category.all, 'All Projects', Icons.star_rounded),
   (_Category.popular, 'Popular', Icons.local_fire_department_rounded),
   (_Category.mobile, 'Mobile', Icons.phone_iphone_rounded),
   (_Category.web, 'Web', Icons.public_rounded),
 ];
+
+const _seeButtonBlue = Color(0xFF0A84FF);
 
 // Categories are derived from each project's admin-entered tech tags —
 // there's no separate "category" field in the data model, so a project can
@@ -94,22 +96,26 @@ class _ProjectsWindowContentState extends ConsumerState<ProjectsWindowContent> {
         return LayoutBuilder(
           builder: (context, constraints) {
             final showSidebar = constraints.maxWidth > 520;
-            final columns = constraints.maxWidth > 900 ? 3 : (constraints.maxWidth > 600 ? 2 : 1);
+            final columns = constraints.maxWidth > 640 ? 2 : 1;
 
             final content = SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (!showSidebar)
+                  if (!showSidebar) ...[
                     _CategoryChipsRow(
                       selected: _selected,
                       counts: counts,
                       onSelect: (c) => setState(() => _selected = c),
                     ),
+                    const SizedBox(height: 12),
+                  ],
                   if (banner != null) ...[
+                    const _SectionHeading('Featured'),
+                    const SizedBox(height: 20),
                     _FeaturedBanner(project: banner),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 36),
                   ],
                   if (gridItems.isEmpty && banner == null)
                     const Padding(
@@ -118,19 +124,22 @@ class _ProjectsWindowContentState extends ConsumerState<ProjectsWindowContent> {
                         child: Text('No projects in this category yet.', style: TextStyle(color: AppColors.textSecondary)),
                       ),
                     )
-                  else if (gridItems.isNotEmpty)
+                  else if (gridItems.isNotEmpty) ...[
+                    const _SectionHeading('My Projects'),
+                    const SizedBox(height: 20),
                     GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: gridItems.length,
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: columns,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        mainAxisExtent: 260,
+                        crossAxisSpacing: 24,
+                        mainAxisSpacing: 32,
+                        mainAxisExtent: 232,
                       ),
-                      itemBuilder: (context, i) => _ProjectCard(project: gridItems[i]),
+                      itemBuilder: (context, i) => _ProjectListTile(project: gridItems[i]),
                     ),
+                  ],
                 ],
               ),
             );
@@ -155,7 +164,26 @@ class _ProjectsWindowContentState extends ConsumerState<ProjectsWindowContent> {
   }
 }
 
-class _CategorySidebar extends StatelessWidget {
+/// A section title ("Featured" / "My Projects") with the thin divider rule
+/// underneath it, matching the reference design.
+class _SectionHeading extends StatelessWidget {
+  final String title;
+  const _SectionHeading(this.title);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white)),
+        const SizedBox(height: 10),
+        Container(height: 1, color: AppColors.glassBorder),
+      ],
+    );
+  }
+}
+
+class _CategorySidebar extends ConsumerWidget {
   final _Category selected;
   final Map<_Category, int> counts;
   final ValueChanged<_Category> onSelect;
@@ -163,7 +191,8 @@ class _CategorySidebar extends StatelessWidget {
   const _CategorySidebar({required this.selected, required this.counts, required this.onSelect});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hero = ref.watch(heroProvider).value;
     return Container(
       width: 170,
       padding: const EdgeInsets.all(12),
@@ -189,6 +218,54 @@ class _CategorySidebar extends StatelessWidget {
               isSelected: selected == def.$1,
               onTap: () => onSelect(def.$1),
             ),
+          const Spacer(),
+          if (hero != null && hero.name.isNotEmpty) _SidebarProfile(name: hero.name, role: hero.title),
+        ],
+      ),
+    );
+  }
+}
+
+/// Sidebar footer showing the site owner's own name/role (from the Hero
+/// content the admin already fills in) with an initials avatar — no stock
+/// photo, since the data model has no profile-picture field.
+class _SidebarProfile extends StatelessWidget {
+  final String name;
+  final String role;
+  const _SidebarProfile({required this.name, required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(gradient: AppColors.accentGradient, shape: BoxShape.circle),
+            child: Text(initial, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                if (role.isNotEmpty)
+                  Text(role,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 10.5, color: AppColors.textSecondary)),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -333,9 +410,43 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
-/// The single, large "hero" card at the top of a filtered list — mirrors the
-/// featured-project treatment from modern portfolio apps (image overlay,
-/// FEATURED badge, prominent View button).
+IconData _fallbackLogoIcon(Project project) =>
+    _isMobile(project) ? Icons.phone_iphone_rounded : (_isWeb(project) ? Icons.public_rounded : Icons.widgets_rounded);
+
+/// A project's small square icon badge — its own uploaded logo if set,
+/// otherwise a generic icon derived from its tech tags.
+class _ProjectLogo extends StatelessWidget {
+  final Project project;
+  final double size;
+  const _ProjectLogo({required this.project, this.size = 40});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasLogo = project.logoUrl != null && project.logoUrl!.isNotEmpty;
+    return Container(
+      width: size,
+      height: size,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(size * 0.28),
+      ),
+      child: hasLogo
+          ? Image.network(
+              project.logoUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stack) =>
+                  Icon(_fallbackLogoIcon(project), size: size * 0.5, color: AppColors.background),
+            )
+          : Icon(_fallbackLogoIcon(project), size: size * 0.5, color: AppColors.background),
+    );
+  }
+}
+
+/// The single "Featured" project: text (category, description, "See more")
+/// on one side and a large banner image with the project's logo badge
+/// overlapping its top-right corner on the other — stacked on narrow
+/// windows instead of side-by-side.
 class _FeaturedBanner extends StatelessWidget {
   final Project project;
   const _FeaturedBanner({required this.project});
@@ -345,186 +456,164 @@ class _FeaturedBanner extends StatelessWidget {
     final link = (project.liveUrl?.isNotEmpty ?? false) ? project.liveUrl : project.repoUrl;
     final hasImage = project.imageUrl != null && project.imageUrl!.isNotEmpty;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        height: 190,
-        decoration: BoxDecoration(
-          gradient: AppColors.accentGradient,
-          image: hasImage
-              ? DecorationImage(
-                  image: NetworkImage(project.imageUrl!),
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.4), BlendMode.darken),
-                )
-              : null,
+    final image = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: AspectRatio(
+            aspectRatio: 16 / 10,
+            child: hasImage
+                ? Image.network(
+                    project.imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stack) =>
+                        const DecoratedBox(decoration: BoxDecoration(gradient: AppColors.accentGradient)),
+                  )
+                : const DecoratedBox(decoration: BoxDecoration(gradient: AppColors.accentGradient)),
+          ),
         ),
-        padding: const EdgeInsets.all(18),
-        child: Stack(
+        Positioned(top: -14, right: 20, child: _ProjectLogo(project: project, size: 64)),
+      ],
+    );
+
+    final text = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(project.title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
+        if (project.category != null && project.category!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(project.category!, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+        ],
+        const SizedBox(height: 16),
+        Text(
+          project.description,
+          maxLines: 4,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.6),
+        ),
+        const SizedBox(height: 20),
+        if (link != null && link.isNotEmpty) _SeeButton(label: 'See more', onTap: () => _openLink(link)),
+      ],
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 560) {
+          return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [image, const SizedBox(height: 24), text]);
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.45), borderRadius: BorderRadius.circular(20)),
-                child: const Text(
-                  'FEATURED',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1, color: Colors.white),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          project.title,
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          project.description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12.5, color: Colors.white70, height: 1.4),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  if (link != null && link.isNotEmpty)
-                    ElevatedButton(
-                      onPressed: () => launchUrl(Uri.parse(link), webOnlyWindowName: '_blank'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppColors.background,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      ),
-                      child: const Text('View'),
-                    ),
-                ],
-              ),
-            ),
+            Expanded(flex: 5, child: text),
+            const SizedBox(width: 32),
+            Expanded(flex: 6, child: image),
           ],
+        );
+      },
+    );
+  }
+}
+
+void _openLink(String url) => launchUrl(Uri.parse(url), webOnlyWindowName: '_blank');
+
+/// A pill button — solid blue with white text (the "See more" style used on
+/// the Featured card) or, via [filled]: false, a white pill with blue text
+/// (the compact "See" style used on each project row).
+class _SeeButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  final bool filled;
+  const _SeeButton({required this.label, required this.onTap, this.filled = true});
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: filled ? 22 : 16, vertical: filled ? 13 : 8),
+          decoration: BoxDecoration(
+            color: filled ? _seeButtonBlue : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: filled ? 14 : 12.5,
+              fontWeight: FontWeight.w600,
+              color: filled ? Colors.white : _seeButtonBlue,
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-class _ProjectCard extends StatelessWidget {
+/// One row in the "My Projects" grid: logo + title + category + a "See"
+/// button, with the project's banner image beneath it. The whole tile is
+/// clickable, not just the button.
+class _ProjectListTile extends StatelessWidget {
   final Project project;
-  const _ProjectCard({required this.project});
+  const _ProjectListTile({required this.project});
 
   @override
   Widget build(BuildContext context) {
     final link = (project.liveUrl?.isNotEmpty ?? false) ? project.liveUrl : project.repoUrl;
-    final hasSeparateRepo = project.repoUrl != null && project.repoUrl!.isNotEmpty && project.repoUrl != link;
-    final categoryIcon = _isMobile(project) ? Icons.phone_iphone_rounded : (_isWeb(project) ? Icons.public_rounded : Icons.widgets_rounded);
+    final hasImage = project.imageUrl != null && project.imageUrl!.isNotEmpty;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.glassBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (project.imageUrl != null && project.imageUrl!.isNotEmpty)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.network(
-                project.imageUrl!,
-                height: 80,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stack) => const SizedBox.shrink(),
-              ),
-            )
-          else
-            Container(
-              height: 4,
-              decoration: BoxDecoration(
-                gradient: AppColors.accentGradient,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(color: AppColors.glassFill, borderRadius: BorderRadius.circular(8)),
-                child: Icon(categoryIcon, size: 14, color: AppColors.accentEnd),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  project.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: Text(
-              project.description,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: AppColors.textSecondary, height: 1.4, fontSize: 12.5),
-            ),
-          ),
-          if (project.techTags.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 6, bottom: 8),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: project.techTags
-                    .take(3)
-                    .map((t) => Text('#$t', style: const TextStyle(fontSize: 10.5, color: AppColors.accentEnd)))
-                    .toList(),
-              ),
-            ),
-          Row(
-            children: [
-              const Spacer(),
-              if (hasSeparateRepo)
-                IconButton(
-                  tooltip: 'Source',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => launchUrl(Uri.parse(project.repoUrl!), webOnlyWindowName: '_blank'),
-                  icon: const Icon(Icons.code, size: 16),
-                ),
-              if (link != null && link.isNotEmpty)
-                TextButton(
-                  onPressed: () => launchUrl(Uri.parse(link), webOnlyWindowName: '_blank'),
-                  style: TextButton.styleFrom(
-                    backgroundColor: AppColors.glassFill,
-                    foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    return MouseRegion(
+      cursor: (link != null && link.isNotEmpty) ? SystemMouseCursors.click : MouseCursor.defer,
+      child: GestureDetector(
+        onTap: (link != null && link.isNotEmpty) ? () => _openLink(link) : null,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                _ProjectLogo(project: project, size: 40),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(project.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700, color: Colors.white)),
+                      if (project.category != null && project.category!.isNotEmpty)
+                        Text(project.category!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    ],
                   ),
-                  child: const Text('View', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 10),
+                if (link != null && link.isNotEmpty) _SeeButton(label: 'See', onTap: () => _openLink(link), filled: false),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: hasImage
+                    ? Image.network(
+                        project.imageUrl!,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stack) =>
+                            const DecoratedBox(decoration: BoxDecoration(gradient: AppColors.accentGradient)),
+                      )
+                    : const DecoratedBox(decoration: BoxDecoration(gradient: AppColors.accentGradient)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
