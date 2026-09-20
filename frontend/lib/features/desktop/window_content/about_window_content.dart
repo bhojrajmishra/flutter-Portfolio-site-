@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/data_providers.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 
 /// Content shown inside the "About Me" window (and, on mobile, its
 /// fullscreen equivalent). Uses [LayoutBuilder] rather than [MediaQuery]
@@ -20,7 +21,7 @@ class AboutWindowContent extends ConsumerWidget {
         final sideBySide = constraints.maxWidth > 520;
         final bio = _Panel(
           child: aboutAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: AppLoadingIndicator()),
             error: (e, st) => Text('Failed to load: $e'),
             data: (about) => Text(
               about.bio.isNotEmpty ? about.bio : 'Add your bio from the admin panel.',
@@ -30,7 +31,7 @@ class AboutWindowContent extends ConsumerWidget {
         );
         final skills = _Panel(
           child: skillsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: AppLoadingIndicator()),
             error: (e, st) => Text('Failed to load: $e'),
             data: (skills) {
               if (skills.isEmpty) {

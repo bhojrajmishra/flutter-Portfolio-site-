@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/api/data_providers.dart';
 import '../../../core/models/blog_post.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 
 final _dateFormat = DateFormat('MMMM d, yyyy');
 
@@ -28,7 +29,7 @@ class _BlogWindowContentState extends ConsumerState<BlogWindowContent> {
     final postsAsync = ref.watch(blogPostsProvider);
 
     return postsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: AppLoadingIndicator()),
       error: (e, st) => Center(child: Text('Failed to load: $e')),
       data: (posts) {
         final published = posts.where((p) => p.isPublished).toList();

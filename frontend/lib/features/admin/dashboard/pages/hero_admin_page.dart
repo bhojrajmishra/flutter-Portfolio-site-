@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/api/data_providers.dart';
 import '../../../../core/api/portfolio_repository.dart';
 import '../../../../core/models/hero_content.dart';
+import '../../../../core/widgets/app_loading_indicator.dart';
 import '../../../../core/widgets/glass_card.dart';
 import '../../widgets/admin_helpers.dart';
 import '../../widgets/admin_page.dart';
@@ -89,7 +90,7 @@ class _HeroAdminPageState extends ConsumerState<HeroAdminPage> {
       title: 'Hero Section',
       subtitle: 'The intro visitors see first.',
       child: heroAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppLoadingIndicator()),
         error: (e, st) => Text('Failed to load: $e'),
         data: (hero) {
           _populate(hero);

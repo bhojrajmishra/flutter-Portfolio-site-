@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api/data_providers.dart';
 import '../../../core/models/app_listing.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../window_manager.dart';
 
@@ -76,7 +77,7 @@ class _AppStoreWindowContentState extends ConsumerState<AppStoreWindowContent> {
         ),
         Expanded(
           child: appsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: AppLoadingIndicator()),
             error: (e, st) => Center(
               child: Text('Failed to load: $e', style: const TextStyle(color: AppColors.textSecondary)),
             ),

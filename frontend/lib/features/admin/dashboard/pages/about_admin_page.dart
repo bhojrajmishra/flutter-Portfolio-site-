@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/api/data_providers.dart';
 import '../../../../core/api/portfolio_repository.dart';
 import '../../../../core/models/about_content.dart';
+import '../../../../core/widgets/app_loading_indicator.dart';
 import '../../../../core/widgets/glass_card.dart';
 import '../../widgets/admin_helpers.dart';
 import '../../widgets/admin_page.dart';
@@ -53,7 +54,7 @@ class _AboutAdminPageState extends ConsumerState<AboutAdminPage> {
       title: 'About Section',
       subtitle: 'Your bio, shown alongside your skills.',
       child: aboutAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppLoadingIndicator()),
         error: (e, st) => Text('Failed to load: $e'),
         data: (about) {
           _populate(about);

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/data_providers.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 
 /// Floating "widget" card showing real live weather for the visitor's own
 /// location (browser geolocation, not an admin-configured city).
@@ -26,7 +27,7 @@ class WeatherWidget extends ConsumerWidget {
       child: weatherAsync.when(
         loading: () => const SizedBox(
           height: 90,
-          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          child: Center(child: AppLoadingIndicator(size: 22, showLabel: false)),
         ),
         error: (e, st) {
           return SizedBox(

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/api/data_providers.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 
 final _monthYear = DateFormat('MMM yyyy');
 
@@ -28,7 +29,7 @@ class ExperienceWindowContent extends ConsumerWidget {
         final experience = _Column(
           title: 'Experience',
           child: experienceAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: AppLoadingIndicator()),
             error: (e, st) => Text('Failed to load: $e'),
             data: (items) => items.isEmpty
                 ? const Text('Add experience from the admin panel.',
@@ -49,7 +50,7 @@ class ExperienceWindowContent extends ConsumerWidget {
         final education = _Column(
           title: 'Education',
           child: educationAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: AppLoadingIndicator()),
             error: (e, st) => Text('Failed to load: $e'),
             data: (items) => items.isEmpty
                 ? const Text('Add education from the admin panel.',

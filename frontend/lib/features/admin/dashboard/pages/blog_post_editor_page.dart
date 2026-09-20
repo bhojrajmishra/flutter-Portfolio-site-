@@ -8,6 +8,7 @@ import '../../../../core/api/data_providers.dart';
 import '../../../../core/api/portfolio_repository.dart';
 import '../../../../core/models/blog_post.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_loading_indicator.dart';
 import '../../../../core/widgets/glass_card.dart';
 import '../../widgets/admin_helpers.dart';
 import '../../widgets/admin_page.dart';
@@ -239,7 +240,7 @@ class _BlogPostEditorPageState extends ConsumerState<BlogPostEditorPage> {
       title: _isEditing ? 'Edit Post' : 'New Post',
       child: _isEditing
           ? postsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: AppLoadingIndicator()),
               error: (e, st) => Text('Failed to load: $e'),
               data: (posts) {
                 final matches = posts.where((p) => p.id == widget.postId);

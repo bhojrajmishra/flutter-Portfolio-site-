@@ -5,6 +5,7 @@ import '../../../../core/api/data_providers.dart';
 import '../../../../core/api/portfolio_repository.dart';
 import '../../../../core/models/skill.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_loading_indicator.dart';
 import '../../../../core/widgets/glass_card.dart';
 import '../../widgets/admin_helpers.dart';
 import '../../widgets/admin_page.dart';
@@ -91,7 +92,7 @@ class SkillsAdminPage extends ConsumerWidget {
         label: const Text('Add Skill'),
       ),
       child: skillsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppLoadingIndicator()),
         error: (e, st) => Text('Failed to load: $e'),
         data: (skills) {
           if (skills.isEmpty) {

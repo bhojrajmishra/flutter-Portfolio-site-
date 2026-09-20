@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api/data_providers.dart';
 import '../../../core/models/project.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 
 enum _Category { all, popular, mobile, web }
 
@@ -60,7 +61,7 @@ class _ProjectsWindowContentState extends ConsumerState<ProjectsWindowContent> {
     final projectsAsync = ref.watch(projectsProvider);
 
     return projectsAsync.when(
-      loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
+      loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: AppLoadingIndicator())),
       error: (e, st) => Center(
         child: Padding(padding: const EdgeInsets.all(32), child: Text('Failed to load: $e')),
       ),
